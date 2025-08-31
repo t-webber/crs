@@ -11,10 +11,6 @@ ARCH := amd64
 CONFIG := $(NAME).yaml
 SYNAPSE := python -m synapse.app.homeserver
 
-ifndef VIRTUAL_ENV
-$(error Not in virtualenv, please create one and source the venv/bin/activate)
-endif
-
 define SETTINGS
 
 suppress_key_server_warning: true
@@ -27,8 +23,8 @@ endef
 export SETTINGS
 
 .DEFAULT_GOAL := start
-.PHONY: requirements install clean start createuser whatsapp
-.PRECIOUS: mautrix-%-registration.yaml mautrix-%-config.yaml mautrix-%-config.yaml.default
+.PHONY: requirements install clean start createuser whatsapp install-synapse
+.SECONDARY:
 
 requirements:
 	pip install --upgrade pip
@@ -36,11 +32,13 @@ requirements:
 	pip install matrix-synapse
 	pip list --format=freeze >requirements.txt
 
-install: mautrix-whatsapp-registration.yaml
+install-synapse:
 	pip install -r requirements.txt
 	pip list --format=freeze >requirements.txt
 	$(SYNAPSE) --server-name $(SERVER) --config-path $(CONFIG) --generate-config --report-stats=no
 	@echo "$$SETTINGS" >> $(CONFIG)
+
+install: mautrix-whatsapp-registration.yaml install-synapse
 
 start:
 	$(SYNAPSE) --config-path $(CONFIG)
