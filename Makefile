@@ -13,7 +13,7 @@ $(error Not in virtualenv, please create one and source the venv/bin/activate)
 endif
 
 .DEFAULT_GOAL := start
-.PHONY: requirements install clean start
+.PHONY: requirements install clean start createuser
 
 requirements:
 	pip install --upgrade pip
@@ -30,6 +30,9 @@ install:
 
 start: install
 	$(SYNAPSE) --config-path $(CONFIG)
+
+createuser:
+	register_new_matrix_user -c $(CONFIG)
 
 clean:
 	rm -rf venv $(NAME).* *.log.config *.signing.key media_store
