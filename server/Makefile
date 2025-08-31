@@ -49,7 +49,8 @@ createuser:
 	register_new_matrix_user -c $(CONFIG)
 
 clean:
-	rm -rf venv $(NAME).* *.log.config *.signing.key media_store *.yaml logs mautrix-*
+	rm -rf venv $(NAME).* *.log.config *.signing.key *.yaml logs mautrix-*
+	sudo rm -rf media_store
 
 ### MAUTRIXES ###
 
