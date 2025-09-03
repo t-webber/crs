@@ -1,11 +1,12 @@
 use std::{thread, time::Duration};
 
 use matrix_sdk::{
-    Client,
+    Client, RoomMemberships,
     config::SyncSettings,
     ruma::{
-        TransactionId,
+        api::client::room::create_room::v3::Request as CreateRoomRequest,
         events::room::message::{RoomMessageEventContent, SyncRoomMessageEvent},
+        user_id,
     },
 };
 
@@ -14,6 +15,26 @@ async fn sync_client(client: Client) {
         .sync(SyncSettings::default())
         .await
         .unwrap_or_else(|err| panic!("Failed to synchronise with the server: {err:?}"));
+}
+
+async fn ask_for_whatsapp_login_qr_code(client: Client) {
+    let whatsappbot_room = client.create_room(CreateRoomRequest::new()).await.unwrap();
+    whatsappbot_room
+        .invite_user_by_id(user_id!("@whatsappbot:localhost"))
+        .await
+        .unwrap();
+    assert!(
+        whatsappbot_room
+            .members(RoomMemberships::ACTIVE)
+            .await
+            .unwrap()
+            .into_iter()
+            .any(|member| member.name() == "WhatsApp bridge Bot")
+    );
+    whatsappbot_room
+        .send(RoomMessageEventContent::text_plain("!wa login qr"))
+        .await
+        .unwrap();
 }
 
 #[tokio::main]
@@ -50,13 +71,14 @@ async fn main() {
         backoff <<= 1;
         if let Some(room) = client.rooms().first() {
             room.send(RoomMessageEventContent::text_plain("Hello from Rust"))
-                .with_transaction_id(TransactionId::new())
                 .await
                 .unwrap();
             println!("\x1b[35mMessage sent!\x1b[0m");
             break;
         }
     }
+
+    ask_for_whatsapp_login_qr_code(client).await;
 
     synchronisation_handler.await.unwrap();
     unreachable!("Sync function never returns")
