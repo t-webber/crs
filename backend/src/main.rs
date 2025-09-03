@@ -2,6 +2,8 @@ use matrix_sdk::{Client, config::SyncSettings, ruma::events::room::message::Sync
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
+
     let client = Client::builder()
         .homeserver_url("http://localhost:8008")
         .build()
