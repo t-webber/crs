@@ -1,0 +1,38 @@
+# Edition
+style_edition = "2024"
+
+# Imports
+imports_layout = "Horizontal"
+imports_granularity = "Module"
+group_imports = "StdExternalCrate"
+
+# Widths
+max_width = 80
+wrap_comments = true
+use_small_heuristics = "Max"
+
+# Breaks
+where_single_line = true
+overflow_delimited_expr = true
+
+# Strings and docs
+format_strings = true
+normalize_comments = true
+normalize_doc_attributes = true
+format_code_in_doc_comments = true
+
+# Decrease verbosity
+match_arm_blocks = false
+use_try_shorthand = true
+use_field_init_shorthand = true
+condense_wildcard_suffixes = true
+
+# Others
+newline_style = "Unix"
+reorder_impl_items = true
+blank_lines_upper_bound = 2
+format_macro_matchers = true
+enum_discrim_align_threshold = 20
+struct_field_align_threshold = 20
+hex_literal_case = "Lower"
+unstable_features = true

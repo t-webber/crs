@@ -1,6 +1,7 @@
 //! Backend for the CRS app.
 //!
-//! Handles connections to the server and updates the client data on incomming messages.
+//! Handles connections to the server and updates the client data on incomming
+//! messages.
 
 #![warn(clippy::pedantic, clippy::restriction, clippy::nursery)]
 #![expect(clippy::blanket_clippy_restriction_lints, reason = "import them all")]

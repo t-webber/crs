@@ -1,9 +1,9 @@
 #![feature(impl_trait_in_bindings)]
 
-use matrix_sdk::ruma::{
-    events::room::message::{RoomMessageEventContent, SyncRoomMessageEvent},
-    user_id,
+use matrix_sdk::ruma::events::room::message::{
+    RoomMessageEventContent, SyncRoomMessageEvent
 };
+use matrix_sdk::ruma::user_id;
 
 #[tokio::main]
 async fn main() {
@@ -36,7 +36,9 @@ async fn main() {
     let whatsapp_dm = user
         .create_room_with(user_id!("@whatsappbot:localhost"))
         .await
-        .unwrap_or_else(|err| panic!("Failed to create DM with whatsappbot: {err}"));
+        .unwrap_or_else(|err| {
+            panic!("Failed to create DM with whatsappbot: {err}")
+        });
 
     whatsapp_dm
         .send(RoomMessageEventContent::text_plain("!wa login qr"))
