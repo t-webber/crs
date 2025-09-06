@@ -1,5 +1,6 @@
 //! App struct to hold the data and state of the TUI
 
+
 use backend::user::User;
 use color_eyre::Result;
 
@@ -18,7 +19,7 @@ impl App {
     }
 
     /// Runs the TUI
-    pub fn run(&mut self) -> color_eyre::Result<()> {
+    pub const fn run(&mut self) -> Result<()> {
         Ok(())
     }
 

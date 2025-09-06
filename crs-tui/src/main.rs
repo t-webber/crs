@@ -12,12 +12,24 @@
 
 mod app;
 
+use std::env;
+
+use color_eyre::Result;
+use color_eyre::eyre::Context as _;
+use dotenv::dotenv;
+
 use crate::app::App;
 
-
 #[tokio::main]
-async fn main() -> color_eyre::Result<()> {
-    let mut app = App::new("http://localhost:8008").await?;
+async fn main() -> Result<()> {
+    color_eyre::install()?;
+
+    dotenv()?;
+    let homeserver_url = env::var("HOMESERVER_URL").with_context(|| {
+        "Please add the HOMESERVER_URL variable in the .env file"
+    })?;
+
+    let mut app = App::new(&homeserver_url).await?;
     let res = app.run();
     app.delete();
     res
