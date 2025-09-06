@@ -3,15 +3,16 @@ name = "backend"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
-matrix-sdk = { version = "0.13.0" }
-tokio = { version = "1.47.1", features = ["full"] }
-tracing-subscriber = "0.3.20"
-
-[[bin]]
-name = "test-backend"
-path = "src/main.rs"
-
 [lib]
 name = "backend"
 path = "src/lib.rs"
+
+[dependencies]
+tokio = { version = "1.47.1", features = ["full"] }
+tracing-subscriber = "0.3.20"
+# must be same version than matrix-sdk-test
+matrix-sdk = "0.14.0"
+
+[dev-dependencies]
+# must be same version than matrix-sdk
+matrix-sdk-test = "0.14.0"

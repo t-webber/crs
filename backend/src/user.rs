@@ -15,9 +15,9 @@ use tokio::task::JoinHandle;
 /// Connected user to the homeserver
 pub struct User {
     /// Client to communicate with the homeserver
-    client:   Client,
+    pub client: Client,
     /// Homeserver username
-    username: Option<String>,
+    username:   Option<String>,
 }
 
 impl User {
@@ -102,5 +102,11 @@ impl User {
                 return room;
             }
         }
+    }
+}
+
+impl From<Client> for User {
+    fn from(client: Client) -> Self {
+        Self { client, username: None }
     }
 }
