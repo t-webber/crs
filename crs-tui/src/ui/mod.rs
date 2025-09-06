@@ -5,8 +5,9 @@ mod login;
 
 use color_eyre::Result;
 use ratatui::Frame;
-use ratatui::crossterm::event::{Event, KeyCode, KeyEvent};
+use ratatui::crossterm::event::{Event, KeyCode};
 
+pub use crate::ui::login::LoginCredentials;
 use crate::ui::login::LoginPage;
 
 /// Trait to define components present in the app
@@ -47,6 +48,7 @@ pub trait Component {
 
 /// Screen currently displayed on the user interface
 pub enum Screen {
+    /// Page to prompt for matrix credentials
     Login(LoginPage),
 }
 
@@ -57,7 +59,7 @@ impl Default for Screen {
 }
 
 impl Component for Screen {
-    type UpdateState = ShouldExit;
+    type UpdateState = ScreenUpdate;
 
     fn draw(&self, frame: &mut Frame) {
         match self {
@@ -69,15 +71,25 @@ impl Component for Screen {
         if let Event::Key(key_event) = event
             && key_event.code == KeyCode::Esc
         {
-            panic!()
+            return Ok(Some(ScreenUpdate::ShouldExit));
         }
         match self {
             Self::Login(login_page) => {
-                if let Some(state) = login_page.on_event(event)? {}
+                if let Some(login_credentials) = login_page.on_event(event)? {
+                    return Ok(Some(ScreenUpdate::AttemptLogIn(
+                        login_credentials,
+                    )));
+                }
             }
         }
         Ok(None)
     }
 }
 
-pub struct ShouldExit;
+/// Informs that the program should exit
+pub enum ScreenUpdate {
+    /// Attempt to log into the server with these credentials
+    AttemptLogIn(LoginCredentials),
+    /// The user wan't to exit the app
+    ShouldExit,
+}

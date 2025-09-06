@@ -11,7 +11,12 @@
     reason = "bad lint"
 )]
 #![allow(clippy::mod_module_files, reason = "chosen style")]
-#![allow(clippy::wildcard_enum_match_arm, reason = "dev experience")]
+#![allow(
+    clippy::pub_use,
+    clippy::wildcard_enum_match_arm,
+    clippy::pattern_type_mismatch,
+    reason = "dev experience"
+)]
 
 mod app;
 mod ui;
@@ -32,9 +37,8 @@ async fn main() -> Result<()> {
     let homeserver_url = env::var("HOMESERVER_URL").with_context(|| {
         "Please add the HOMESERVER_URL variable in the .env file"
     })?;
-
     let mut app = App::new(&homeserver_url).await?;
-    let res = app.run();
+    let res = app.run().await;
     app.delete();
     res
 }

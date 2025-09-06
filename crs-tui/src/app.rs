@@ -8,7 +8,7 @@ use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::read;
 
-use crate::ui::{Component as _, Screen};
+use crate::ui::{Component as _, LoginCredentials, Screen, ScreenUpdate};
 
 /// Holds the data and the state of the TUI
 pub struct App {
@@ -32,14 +32,22 @@ impl App {
     }
 
     /// Runs the TUI
-    pub fn run(&mut self) -> Result<()> {
+    pub async fn run(&mut self) -> Result<()> {
         loop {
-            self.terminal.draw(|f| self.screen.draw(f))?;
-            self.screen.on_event(read()?)?;
+            self.terminal.draw(|frame| self.screen.draw(frame))?;
+            let Some(update) = self.screen.on_event(read()?)? else { continue };
+            match update {
+                ScreenUpdate::ShouldExit => break Ok(()),
+                ScreenUpdate::AttemptLogIn(LoginCredentials {
+                    username,
+                    password,
+                }) => self.user.login(username, &password).await?,
+            }
         }
     }
 
     /// Deletes the app and clean up
+    #[expect(clippy::unused_self, reason = "the goal is to destroy the object")]
     pub fn delete(self) {
         ratatui::restore();
     }

@@ -1,3 +1,6 @@
+//! Module that contains reusable widgets and UI elements for different screens
+//! and components
+
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::Stylize as _;
 use ratatui::text::Line;

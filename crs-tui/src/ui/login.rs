@@ -1,4 +1,7 @@
-use core::iter::{repeat, repeat_n};
+//! Login page to store pass credentials to the backend
+
+use core::iter::repeat_n;
+use core::mem::take;
 
 use color_eyre::Result;
 use ratatui::Frame;
@@ -109,7 +112,7 @@ impl LoginPage {
 }
 
 impl Component for LoginPage {
-    type UpdateState = SubmitLogin;
+    type UpdateState = LoginCredentials;
 
     fn draw(&self, frame: &mut Frame) {
         let instructions = Self::instructions();
@@ -143,7 +146,8 @@ impl Component for LoginPage {
             }
             // Page handlers
             KeyCode::Tab | KeyCode::BackTab => self.toggle_field(),
-            KeyCode::Enter => return Ok(Some(SubmitLogin)),
+            KeyCode::Enter =>
+                return Ok(Some(LoginCredentials::from(take(self)))),
             _ => (),
         }
         Ok(None)
@@ -152,4 +156,15 @@ impl Component for LoginPage {
 
 /// Struct to represent the state in which the user just submitted the login
 /// form
-pub struct SubmitLogin;
+pub struct LoginCredentials {
+    /// Final password to send to server
+    pub password: String,
+    /// Username to send to server
+    pub username: String,
+}
+
+impl From<LoginPage> for LoginCredentials {
+    fn from(login_page: LoginPage) -> Self {
+        Self { username: login_page.username, password: login_page.password }
+    }
+}
