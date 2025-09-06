@@ -5,7 +5,7 @@ mod login;
 
 use color_eyre::Result;
 use ratatui::Frame;
-use ratatui::crossterm::event::Event;
+use ratatui::crossterm::event::{Event, KeyCode, KeyEvent};
 
 use crate::ui::login::LoginPage;
 
@@ -57,7 +57,7 @@ impl Default for Screen {
 }
 
 impl Component for Screen {
-    type UpdateState = ();
+    type UpdateState = ShouldExit;
 
     fn draw(&self, frame: &mut Frame) {
         match self {
@@ -66,6 +66,11 @@ impl Component for Screen {
     }
 
     fn on_event(&mut self, event: Event) -> Result<Option<Self::UpdateState>> {
+        if let Event::Key(key_event) = event
+            && key_event.code == KeyCode::Esc
+        {
+            panic!()
+        }
         match self {
             Self::Login(login_page) => {
                 if let Some(state) = login_page.on_event(event)? {}
@@ -74,3 +79,5 @@ impl Component for Screen {
         Ok(None)
     }
 }
+
+pub struct ShouldExit;

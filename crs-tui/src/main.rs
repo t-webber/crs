@@ -11,6 +11,7 @@
     reason = "bad lint"
 )]
 #![allow(clippy::mod_module_files, reason = "chosen style")]
+#![allow(clippy::wildcard_enum_match_arm, reason = "dev experience")]
 
 mod app;
 mod ui;
