@@ -1,8 +1,13 @@
 //! Handles the display to the screen and event listening
 
+mod components;
+mod login;
+
 use color_eyre::Result;
-use crossterm::event::Event;
 use ratatui::Frame;
+use ratatui::crossterm::event::Event;
+
+use crate::ui::login::LoginPage;
 
 /// Trait to define components present in the app
 ///
@@ -30,8 +35,8 @@ pub trait Component {
     ///
     /// # Returns
     ///
-    ///   component
     /// - `Ok(Some(state))` if there is something to be done by the parent
+    ///   component
     /// - `Ok(None)` if nothing else needs to be done
     /// - `Err(err)` if something unexpected occured
     #[expect(unused_variables, reason = "trait def")]
@@ -40,13 +45,32 @@ pub trait Component {
     }
 }
 
-
 /// Screen currently displayed on the user interface
-#[derive(Default)]
-pub struct Screen;
+pub enum Screen {
+    Login(LoginPage),
+}
+
+impl Default for Screen {
+    fn default() -> Self {
+        Self::Login(LoginPage::default())
+    }
+}
 
 impl Component for Screen {
     type UpdateState = ();
 
-    fn draw(&self, _frame: &mut Frame) {}
+    fn draw(&self, frame: &mut Frame) {
+        match self {
+            Self::Login(login_page) => login_page.draw(frame),
+        }
+    }
+
+    fn on_event(&mut self, event: Event) -> Result<Option<Self::UpdateState>> {
+        match self {
+            Self::Login(login_page) => {
+                if let Some(state) = login_page.on_event(event)? {}
+            }
+        }
+        Ok(None)
+    }
 }

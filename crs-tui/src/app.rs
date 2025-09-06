@@ -1,15 +1,14 @@
 //! App struct to hold the data and state of the TUI
 
-
 use std::io::Stdout;
 
 use backend::user::User;
 use color_eyre::Result;
-use crossterm::event::read;
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
+use ratatui::crossterm::event::read;
 
-use crate::ui::{Component, Screen};
+use crate::ui::{Component as _, Screen};
 
 /// Holds the data and the state of the TUI
 pub struct App {

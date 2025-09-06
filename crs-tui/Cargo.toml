@@ -7,6 +7,5 @@ edition = "2024"
 color-eyre = "0.6.5"
 ratatui = "0.29.0"
 crs_backend = { path = "../crs-backend/" }
-crossterm = { version = "0.29.0", features = ["event-stream"] }
 tokio = { version = "1.47.1", features = ["full"] }
 dotenv = "0.15.0"
