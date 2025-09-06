@@ -15,8 +15,9 @@ mod app;
 use crate::app::App;
 
 
-fn main() -> color_eyre::Result<()> {
-    let mut app = App::new();
+#[tokio::main]
+async fn main() -> color_eyre::Result<()> {
+    let mut app = App::new("http://localhost:8008").await?;
     let res = app.run();
     app.delete();
     res

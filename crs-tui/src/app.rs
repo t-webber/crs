@@ -1,14 +1,20 @@
 //! App struct to hold the data and state of the TUI
 
+use backend::user::User;
+use color_eyre::Result;
+
 /// Holds the data and the state of the TUI
-pub struct App;
+pub struct App {
+    /// Backend user to interact with the homeserver
+    user: User,
+}
 
 #[expect(clippy::arbitrary_source_item_ordering, reason = "run order")]
 impl App {
     /// Creates a new instance of [`Self`]
-    pub fn new() -> Self {
+    pub async fn new(homeserver_url: &str) -> Result<Self> {
         ratatui::init();
-        Self
+        Ok(Self { user: User::new(homeserver_url).await? })
     }
 
     /// Runs the TUI
