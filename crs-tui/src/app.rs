@@ -5,11 +5,11 @@ use std::io::Stdout;
 
 use backend::user::User;
 use color_eyre::Result;
+use crossterm::event::read;
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 
-/// Screen currently displayed on the user interface
-struct Screen;
+use crate::ui::{Component, Screen};
 
 /// Holds the data and the state of the TUI
 pub struct App {
@@ -28,13 +28,16 @@ impl App {
         Ok(Self {
             user:     User::new(homeserver_url).await?,
             terminal: ratatui::init(),
-            screen:   Screen,
+            screen:   Screen::default(),
         })
     }
 
     /// Runs the TUI
-    pub const fn run(&mut self) -> Result<()> {
-        Ok(())
+    pub fn run(&mut self) -> Result<()> {
+        loop {
+            self.terminal.draw(|f| self.screen.draw(f))?;
+            self.screen.on_event(read()?)?;
+        }
     }
 
     /// Deletes the app and clean up

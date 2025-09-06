@@ -7,10 +7,13 @@
     clippy::question_mark_used,
     clippy::missing_inline_in_public_items,
     clippy::single_call_fn,
+    clippy::missing_trait_methods,
     reason = "bad lint"
 )]
+#![allow(clippy::mod_module_files, reason = "chosen style")]
 
 mod app;
+mod ui;
 
 use std::env;
 
