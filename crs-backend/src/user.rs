@@ -12,6 +12,8 @@ use matrix_sdk::ruma::events::room::message::SyncRoomMessageEvent;
 use matrix_sdk::{Client, ClientBuildError, Error, Room};
 use tokio::task::JoinHandle;
 
+use crate::room::DisplayRoom;
+
 /// Connected user to the homeserver
 pub struct User {
     /// Client to communicate with the homeserver
@@ -37,6 +39,19 @@ impl User {
     }
 
     /// Enable synchronisation with homeserver
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut user = User::new("http://localhost:8000").await.unwrap();
+    /// user.login("@b:localhost", "b").await.unwrap();
+    /// let sync_handle = user.enable_sync();
+    ///
+    /// // use user, it will be synced with the server automatically
+    ///
+    /// sync_handle.await.unwrap().unwrap();
+    /// unreachable!()
+    /// ```
     #[must_use]
     pub fn enable_sync(&self) -> JoinHandle<Result<Infallible, Error>> {
         tokio::spawn({
@@ -50,11 +65,30 @@ impl User {
         })
     }
 
+    /// List all the rooms visible by the users
+    ///
+    /// A room is visible if the user joined, was invited or left the room.
+    #[must_use]
+    pub async fn list_rooms(&self) -> Vec<DisplayRoom> {
+        let mut rooms: Vec<DisplayRoom> = vec![];
+        for room in self.client.rooms() {
+            rooms.push(DisplayRoom::new(room).await);
+        }
+        rooms
+    }
+
     /// Log the user in with credentials
     ///
     /// # Errors
     ///
     /// Returns an error if the client failed to log in the homeserver.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut user = User::new("http://localhost:8000").await.unwrap();
+    /// user.login("@b:localhost", "b").await.unwrap();
+    /// ```
     pub async fn login(
         &mut self,
         username: String,
@@ -92,14 +126,17 @@ impl User {
     /// Wait until the client can see a room.
     ///
     /// A room is visible if the user joined, was invited or left the room.
+    ///
+    /// This function will never panic or return an error, it will just run
+    /// indefinetly until a room is visible from the [`User`].
     #[must_use]
-    pub fn wait_until_visible_room(&self) -> Room {
+    pub async fn wait_until_visible_room(&self) -> DisplayRoom {
         let mut backoff = 1;
         loop {
             thread::sleep(Duration::from_secs(backoff));
-            backoff <<= 1;
+            backoff <<= 1_i32;
             if let Some(room) = self.client.rooms().into_iter().next() {
-                return room;
+                return DisplayRoom::new(room).await;
             }
         }
     }

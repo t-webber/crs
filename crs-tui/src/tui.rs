@@ -36,7 +36,7 @@ impl Tui {
     ) -> color_eyre::Result<Self> {
         let app = if credentials.is_full() {
             let user = credentials.fill_with_empty().login().await?;
-            App::from(user)
+            App::new_with_user(user).await
         } else {
             App::from(credentials.fill_with_empty())
         };

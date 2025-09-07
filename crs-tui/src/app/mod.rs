@@ -37,6 +37,15 @@ impl App {
             user:   None,
         }
     }
+
+    /// Creates a new page with a logged in user
+    pub async fn new_with_user(user: User) -> Self {
+        let sharable_user = Arc::new(user);
+        let _handle = sharable_user.enable_sync();
+        let _room = sharable_user.wait_until_visible_room().await;
+        let page = ChatPage::new(Arc::clone(&sharable_user)).await;
+        Self { screen: Screen::Chat(page), user: Some(sharable_user) }
+    }
 }
 
 impl Component for App {
@@ -55,7 +64,7 @@ impl Component for App {
             Screen::Login(login_page) =>
                 if let Some(credentials) = login_page.on_event(event).await {
                     match credentials.login().await {
-                        Ok(user) => *self = Self::from(user),
+                        Ok(user) => *self = Self::new_with_user(user).await,
                         Err(err) =>
                             *self = Self::new_with_login_err(err.to_string()),
                     }
@@ -71,16 +80,6 @@ impl Component for App {
 impl From<Credentials<String>> for App {
     fn from(value: Credentials<String>) -> Self {
         Self { screen: Screen::Login(LoginPage::new(value)), user: None }
-    }
-}
-
-impl From<User> for App {
-    fn from(value: User) -> Self {
-        let user = Arc::new(value);
-        Self {
-            screen: Screen::Chat(ChatPage::new(Arc::clone(&user))),
-            user:   Some(user),
-        }
     }
 }
 

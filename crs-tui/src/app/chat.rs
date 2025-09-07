@@ -3,24 +3,28 @@
 extern crate alloc;
 use alloc::sync::Arc;
 
+use backend::room::DisplayRoom;
 use backend::user::User;
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::text::Text;
+use ratatui::layout::Rect;
+use ratatui::widgets::{Block, Borders, List, ListItem};
 
 use crate::ui::component::Component;
 
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
 pub struct ChatPage {
+    /// Rooms visible by the user
+    rooms: Vec<DisplayRoom>,
     /// User to interact with matrix server
-    user: Arc<User>,
+    user:  Arc<User>,
 }
 
 impl ChatPage {
     /// Create a new chat page with the given logged in user
-    pub const fn new(user: Arc<User>) -> Self {
-        Self { user }
+    pub async fn new(user: Arc<User>) -> Self {
+        let rooms = user.list_rooms().await;
+        Self { rooms, user }
     }
 }
 
@@ -28,20 +32,33 @@ impl Component for ChatPage {
     type ResponseData = ();
     type UpdateState = ();
 
-    #[expect(clippy::indexing_slicing, reason = "len = 2")]
     fn draw(&self, frame: &mut Frame, area: Rect) {
         if frame.area().width <= 30 {
             todo!()
         }
 
-        let layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(30),
-                Constraint::Percentage(70),
-            ])
-            .split(area);
+        let unknown = String::from("<unknown>");
 
-        frame.render_widget(Text::from("hi"), layout[1]);
+        let name_list = self
+            .rooms
+            .iter()
+            .map(|name| {
+                ListItem::new(
+                    name.as_name().as_ref().unwrap_or(&unknown).as_str(),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        let list = List::new(name_list);
+
+        frame.render_widget(list, area);
     }
+}
+
+/// Room displayed in the list of rooms
+pub struct Room {
+    /// Id of the room
+    id:   String,
+    /// Name of the room
+    name: String,
 }

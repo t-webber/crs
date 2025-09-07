@@ -5,6 +5,7 @@
 
 #![warn(clippy::pedantic, clippy::restriction, clippy::nursery)]
 #![expect(clippy::blanket_clippy_restriction_lints, reason = "import them all")]
+#![allow(clippy::separated_literal_suffix, reason = "chosen style")]
 #![allow(
     clippy::implicit_return,
     clippy::question_mark_used,
@@ -13,4 +14,5 @@
     reason = "bad lints"
 )]
 
+pub mod room;
 pub mod user;
