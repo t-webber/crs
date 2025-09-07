@@ -31,7 +31,7 @@ impl App {
     /// Create a new page after an error at login
     ///
     /// This will repon the login page with the error message
-    fn new_with_login_err(err: String) -> Self {
+    pub fn new_with_login_err(err: String) -> Self {
         Self {
             screen: Screen::Login(LoginPage::new_with_login_err(err)),
             user:   None,
@@ -49,8 +49,8 @@ impl App {
 }
 
 impl Component for App {
-    type ResponseData = ();
-    type UpdateState = ();
+    type ResponseData = String;
+    type UpdateState = Credentials<String>;
 
     fn draw(&self, frame: &mut Frame, area: Rect) {
         match &self.screen {
@@ -61,19 +61,12 @@ impl Component for App {
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         match &mut self.screen {
-            Screen::Login(login_page) =>
-                if let Some(credentials) = login_page.on_event(event).await {
-                    match credentials.login().await {
-                        Ok(user) => *self = Self::new_with_user(user).await,
-                        Err(err) =>
-                            *self = Self::new_with_login_err(err.to_string()),
-                    }
-                },
+            Screen::Login(login_page) => login_page.on_event(event).await,
             Screen::Chat(chat_page) => {
                 chat_page.on_event(event).await?;
+                None
             }
         }
-        None
     }
 }
 

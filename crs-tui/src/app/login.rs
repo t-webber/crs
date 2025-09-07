@@ -9,7 +9,7 @@ use ratatui::style::{Color, Style, Stylize as _};
 use ratatui::text::{Line, Text};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 
-use crate::credentials::{self, Credentials};
+use crate::credentials::Credentials;
 use crate::ui::component::Component;
 use crate::ui::input::Input;
 use crate::ui::widgets::{Instructions, grid_center};

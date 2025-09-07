@@ -12,6 +12,7 @@
 )]
 #![allow(clippy::mod_module_files, reason = "chosen style")]
 #![allow(
+    dead_code,
     clippy::pub_use,
     clippy::wildcard_enum_match_arm,
     clippy::pattern_type_mismatch,
@@ -29,7 +30,6 @@ mod credentials;
 mod tui;
 mod ui;
 
-use color_eyre::Result;
 use dotenv::dotenv;
 
 use crate::credentials::Credentials;
@@ -40,14 +40,14 @@ use crate::tui::Tui;
     clippy::unwrap_in_result,
     reason = "wait to process error to restore the terminal"
 )]
-async fn main() -> Result<()> {
+async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
     dotenv()?;
     let credentials = Credentials::from_env();
-
     let mut tui = Tui::new(credentials).await?;
     let res = tui.run().await;
     tui.delete();
-    res
+
+    res.map_err(Into::into)
 }

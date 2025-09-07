@@ -17,6 +17,15 @@ pub struct Credentials<T> {
 }
 
 impl Credentials<Option<String>> {
+    /// Fill the unknown fields with an empty string
+    pub fn fill_with_empty(self) -> Credentials<String> {
+        Credentials {
+            homeserver: self.homeserver.unwrap_or_default(),
+            username:   self.username.unwrap_or_default(),
+            password:   self.password.unwrap_or_default(),
+        }
+    }
+
     /// Populates a [`Self`] from environment variables
     pub fn from_env() -> Self {
         Self {
@@ -32,18 +41,10 @@ impl Credentials<Option<String>> {
             && self.username.is_some()
             && self.password.is_some()
     }
-
-    /// Fill the unknown fields with an empty string
-    pub fn fill_with_empty(self) -> Credentials<String> {
-        Credentials {
-            homeserver: self.homeserver.unwrap_or_default(),
-            username:   self.username.unwrap_or_default(),
-            password:   self.password.unwrap_or_default(),
-        }
-    }
 }
 
 impl Credentials<String> {
+    /// Attempt to login with the provided credentials
     pub async fn login(self) -> color_eyre::Result<User> {
         let mut user = User::new(&self.homeserver).await?;
         user.login(self.username, &self.password).await?;

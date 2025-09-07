@@ -7,7 +7,7 @@ use backend::room::DisplayRoom;
 use backend::user::User;
 use ratatui::Frame;
 use ratatui::layout::Rect;
-use ratatui::widgets::{Block, Borders, List, ListItem};
+use ratatui::widgets::{List, ListItem};
 
 use crate::ui::component::Component;
 
