@@ -39,8 +39,11 @@ pub trait Component {
     ///   component
     /// - `Ok(None)` if nothing else needs to be done
     /// - `Err(err)` if something unexpected occured
-    fn on_event(&mut self, event: Event) -> Result<Option<Self::UpdateState>> {
-        Ok(None)
+    fn on_event(
+        &mut self,
+        event: Event,
+    ) -> impl Future<Output = Result<Option<Self::UpdateState>>> {
+        async { Ok(None) }
     }
 
     /// Data provided by the parent in response to an update

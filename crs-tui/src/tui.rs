@@ -1,42 +1,47 @@
-//! App struct to hold the data and state of the TU
+//! Holds the data and manages the terminal for the TUI
 
 use std::io::Stdout;
 
-use backend::user::User;
 use color_eyre::Result;
-use color_eyre::eyre::Context as _;
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
-use ratatui::crossterm::event::read;
+use ratatui::crossterm::event::{Event, KeyCode, read};
 
-use crate::ui::LoginCredentials;
+use crate::app::App;
+use crate::credentials::Credentials;
 use crate::ui::component::Component as _;
-use crate::ui::screen::{Screen, ScreenUpdate};
 
 /// Holds the data and the state of the TUI
-pub struct App {
+pub struct Tui {
     /// Current screen displayed on the TUI
-    screen:   Screen,
+    app:      App,
     /// Terminal on which the TUI is drawn
     terminal: Terminal<CrosstermBackend<Stdout>>,
-    /// Backend user to interact with the homeserver
-    user:     User,
 }
 
 #[expect(clippy::arbitrary_source_item_ordering, reason = "run order")]
-impl App {
+impl Tui {
     /// Creates a new instance of [`Self`]
+    ///
+    /// This functions enters the terminal in raw mode. Please call
+    /// [`Self::delete`] before exiting the program. Make sure errors don't
+    /// stop the program before [`Self::delete`] is called.
     ///
     /// # Errors
     ///
     /// Returns an error when
     /// [`ClientBuild::build`](backend::matrix_sdk::ClientBuilder::build) does.
-    pub async fn new(homeserver_url: &str) -> Result<Self> {
-        Ok(Self {
-            user:     User::new(homeserver_url).await?,
-            terminal: ratatui::init(),
-            screen:   Screen::default(),
-        })
+    pub async fn new(
+        credentials: Credentials<Option<String>>,
+    ) -> color_eyre::Result<Self> {
+        let app = if credentials.is_full() {
+            let user = credentials.fill_with_empty().login().await?;
+            App::from(user)
+        } else {
+            App::from(credentials.fill_with_empty())
+        };
+
+        Ok(Self { terminal: ratatui::init(), app })
     }
 
     /// Runs the TUI
@@ -47,17 +52,14 @@ impl App {
     /// Once the event is handled, the UI components are updated and the ²;
     pub async fn run(&mut self) -> Result<()> {
         loop {
-            self.terminal.draw(|frame| self.screen.draw(frame))?;
-            let Some(update) = self.screen.on_event(read()?)? else { continue };
-            match update {
-                ScreenUpdate::ShouldExit => break Ok(()),
-                ScreenUpdate::AttemptLogIn(LoginCredentials {
-                    username,
-                    password,
-                }) => self
-                    .screen
-                    .update(self.user.login(username, &password).await),
+            self.terminal.draw(|frame| self.app.draw(frame))?;
+            let event = read()?;
+            if let Event::Key(key_event) = event
+                && key_event.code == KeyCode::Esc
+            {
+                break Ok(());
             }
+            self.app.on_event(event).await?;
         }
     }
 

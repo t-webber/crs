@@ -11,6 +11,7 @@ use ratatui::style::{Color, Style, Stylize as _};
 use ratatui::text::{Line, Text};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 
+use crate::credentials::Credentials;
 use crate::ui::component::Component;
 use crate::ui::widgets::{Instructions, grid_center};
 
@@ -19,6 +20,8 @@ use crate::ui::widgets::{Instructions, grid_center};
 /// Defaults to [`Self::Username`]
 #[derive(Default)]
 enum CurrentInput {
+    /// User is focused on the homeserver url input
+    HomeServer,
     /// User is focused on the password input
     Password,
     /// User just submitted, no data can be given
@@ -34,13 +37,15 @@ enum CurrentInput {
 #[derive(Default)]
 pub struct LoginPage {
     /// Current input that is being edited,
-    current:  CurrentInput,
+    current:    CurrentInput,
     /// Current login error displayed
-    error:    String,
-    /// Current text  hels by the input for the password
-    password: String,
-    /// Current text  hels by the input for the username
-    username: String,
+    error:      String,
+    /// Current text  held by the input for the homeserver url
+    homeserver: String,
+    /// Current text  held by the input for the password
+    password:   String,
+    /// Current text  held by the input for the username
+    username:   String,
 }
 
 impl LoginPage {
@@ -49,13 +54,27 @@ impl LoginPage {
         Instructions::new(&[(" Switch input", "Tab"), ("Submit", "Enter")])
     }
 
+    pub fn new(credentials: Credentials<String>) -> Self {
+        Self {
+            homeserver: credentials.homeserver,
+            username: credentials.username,
+            password: credentials.password,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_with_login_err(error: String) -> Self {
+        Self { error, ..Default::default() }
+    }
+
     /// Returns the field currently being edited
     fn on_input<F>(&mut self, action: F)
     where F: Fn(&mut String) {
         match self.current {
             CurrentInput::Password => action(&mut self.password),
             CurrentInput::Username => action(&mut self.username),
-            CurrentInput::Submitting => (),
+            CurrentInput::Submitting => action(&mut self.homeserver),
+            CurrentInput::HomeServer => todo!(),
         }
     }
 
@@ -93,6 +112,7 @@ impl LoginPage {
             CurrentInput::Password => (Color::Reset, Color::Green),
             CurrentInput::Username => (Color::Green, Color::Reset),
             CurrentInput::Submitting => (Color::Reset, Color::Reset),
+            CurrentInput::HomeServer => todo!(),
         };
 
         let username_style = Style::default().fg(username_colour);
@@ -120,8 +140,9 @@ impl LoginPage {
     /// Toggles the current input into the other mode to edit the other field
     const fn toggle_field(&mut self) {
         self.current = match self.current {
-            CurrentInput::Password => CurrentInput::Username,
+            CurrentInput::HomeServer => CurrentInput::Username,
             CurrentInput::Username => CurrentInput::Password,
+            CurrentInput::Password => CurrentInput::HomeServer,
             CurrentInput::Submitting => return,
         }
     }
@@ -129,7 +150,7 @@ impl LoginPage {
 
 impl Component for LoginPage {
     type ResponseData = String;
-    type UpdateState = LoginCredentials;
+    type UpdateState = Credentials<String>;
 
     fn draw(&self, frame: &mut Frame) {
         let instructions = Self::instructions();
@@ -150,7 +171,10 @@ impl Component for LoginPage {
         frame.render_widget(popup_dummy, popup_area);
     }
 
-    fn on_event(&mut self, event: Event) -> Result<Option<Self::UpdateState>> {
+    async fn on_event(
+        &mut self,
+        event: Event,
+    ) -> Result<Option<Self::UpdateState>> {
         let Event::Key(key_event): Event = event else { return Ok(None) };
         if key_event.kind != KeyEventKind::Press {
             return Ok(None);
@@ -163,7 +187,7 @@ impl Component for LoginPage {
             }),
             KeyCode::Tab | KeyCode::BackTab => self.toggle_field(),
             KeyCode::Enter => {
-                let credentials = LoginCredentials::from(take(self));
+                let credentials = Credentials::from(take(self));
                 self.current = CurrentInput::Submitting;
                 return Ok(Some(credentials));
             }
@@ -178,17 +202,12 @@ impl Component for LoginPage {
     }
 }
 
-/// Struct to represent the state in which the user just submitted the login
-/// form
-pub struct LoginCredentials {
-    /// Final password to send to server
-    pub password: String,
-    /// Username to send to server
-    pub username: String,
-}
-
-impl From<LoginPage> for LoginCredentials {
-    fn from(login_page: LoginPage) -> Self {
-        Self { username: login_page.username, password: login_page.password }
+impl From<LoginPage> for Credentials<String> {
+    fn from(value: LoginPage) -> Self {
+        Self {
+            homeserver: value.homeserver,
+            username:   value.username,
+            password:   value.password,
+        }
     }
 }

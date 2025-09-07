@@ -23,26 +23,29 @@
 )]
 
 mod app;
+mod credentials;
+mod tui;
 mod ui;
 
-use std::env;
-
 use color_eyre::Result;
-use color_eyre::eyre::Context as _;
 use dotenv::dotenv;
 
-use crate::app::App;
+use crate::credentials::Credentials;
+use crate::tui::Tui;
 
 #[tokio::main]
+#[expect(
+    clippy::unwrap_in_result,
+    reason = "wait to process error to restore the terminal"
+)]
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
     dotenv()?;
-    let homeserver_url = env::var("HOMESERVER_URL").with_context(|| {
-        "Please add the HOMESERVER_URL variable in the .env file"
-    })?;
-    let mut app = App::new(&homeserver_url).await?;
-    let res = app.run().await;
-    app.delete();
+    let credentials = Credentials::from_env();
+
+    let mut tui = Tui::new(credentials).await?;
+    let res = tui.run().await;
+    tui.delete();
     res
 }
