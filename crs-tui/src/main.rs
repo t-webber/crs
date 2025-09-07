@@ -17,6 +17,10 @@
     clippy::pattern_type_mismatch,
     reason = "dev experience"
 )]
+#![allow(
+    clippy::module_name_repetitions,
+    reason = "use objects without module name"
+)]
 
 mod app;
 mod ui;

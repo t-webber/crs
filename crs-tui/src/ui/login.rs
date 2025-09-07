@@ -9,10 +9,10 @@ use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize as _};
 use ratatui::text::{Line, Text};
-use ratatui::widgets::{Block, Paragraph};
+use ratatui::widgets::{Block, Paragraph, Wrap};
 
-use crate::ui::Component;
-use crate::ui::components::{Instructions, grid_center};
+use crate::ui::component::Component;
+use crate::ui::widgets::{Instructions, grid_center};
 
 /// State differentiating the different inputs on the login page.
 ///
@@ -21,6 +21,8 @@ use crate::ui::components::{Instructions, grid_center};
 enum CurrentInput {
     /// User is focused on the password input
     Password,
+    /// User just submitted, no data can be given
+    Submitting,
     /// User is focused on the username input
     #[default]
     Username,
@@ -33,6 +35,8 @@ enum CurrentInput {
 pub struct LoginPage {
     /// Current input that is being edited,
     current:  CurrentInput,
+    /// Current login error displayed
+    error:    String,
     /// Current text  hels by the input for the password
     password: String,
     /// Current text  hels by the input for the username
@@ -40,17 +44,19 @@ pub struct LoginPage {
 }
 
 impl LoginPage {
-    /// Returns the field currently being edited
-    const fn as_current_mut(&mut self) -> &mut String {
-        match self.current {
-            CurrentInput::Password => &mut self.password,
-            CurrentInput::Username => &mut self.username,
-        }
-    }
-
     /// Returns the instructions list for the footer of the popup
     fn instructions() -> Instructions<'static> {
         Instructions::new(&[(" Switch input", "Tab"), ("Submit", "Enter")])
+    }
+
+    /// Returns the field currently being edited
+    fn on_input<F>(&mut self, action: F)
+    where F: Fn(&mut String) {
+        match self.current {
+            CurrentInput::Password => action(&mut self.password),
+            CurrentInput::Username => action(&mut self.username),
+            CurrentInput::Submitting => (),
+        }
     }
 
     /// Returns the border of the popup with the title and instructions
@@ -73,9 +79,11 @@ impl LoginPage {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(1),
+                Constraint::Length(1),
                 Constraint::Length(3),
                 Constraint::Length(1),
                 Constraint::Length(1),
+                Constraint::Length(3),
                 Constraint::Length(3),
             ])
             .margin(2)
@@ -84,6 +92,7 @@ impl LoginPage {
         let (username_colour, password_colour) = match self.current {
             CurrentInput::Password => (Color::Reset, Color::Green),
             CurrentInput::Username => (Color::Green, Color::Reset),
+            CurrentInput::Submitting => (Color::Reset, Color::Reset),
         };
 
         let username_style = Style::default().fg(username_colour);
@@ -96,10 +105,16 @@ impl LoginPage {
         let password = Paragraph::new(Text::from(masked_password))
             .block(Block::bordered().border_style(password_style));
 
-        frame.render_widget(Text::from("Username"), form[0]);
-        frame.render_widget(username, form[1]);
-        frame.render_widget(Text::from("Password"), form[3]);
-        frame.render_widget(password, form[4]);
+        let error = Paragraph::new(self.error.as_str())
+            .wrap(Wrap { trim: true })
+            .style(Style::new().fg(Color::Red));
+
+        frame.render_widget(Text::from("Username"), form[1]);
+        frame.render_widget(username, form[2]);
+
+        frame.render_widget(Text::from("Password"), form[4]);
+        frame.render_widget(password, form[5]);
+        frame.render_widget(error, form[6]);
     }
 
     /// Toggles the current input into the other mode to edit the other field
@@ -107,11 +122,13 @@ impl LoginPage {
         self.current = match self.current {
             CurrentInput::Password => CurrentInput::Username,
             CurrentInput::Username => CurrentInput::Password,
+            CurrentInput::Submitting => return,
         }
     }
 }
 
 impl Component for LoginPage {
+    type ResponseData = String;
     type UpdateState = LoginCredentials;
 
     fn draw(&self, frame: &mut Frame) {
@@ -121,7 +138,7 @@ impl Component for LoginPage {
 
         let popup_area = grid_center(
             Constraint::Min(minimum_width),
-            Constraint::Length(13),
+            Constraint::Length(17),
             frame.area(),
         );
 
@@ -140,17 +157,24 @@ impl Component for LoginPage {
         }
         match key_event.code {
             // Input handlers
-            KeyCode::Char(ch) => self.as_current_mut().push(ch),
-            KeyCode::Backspace => {
-                self.as_current_mut().pop();
-            }
-            // Page handlers
+            KeyCode::Char(ch) => self.on_input(|input| input.push(ch)),
+            KeyCode::Backspace => self.on_input(|input| {
+                input.pop();
+            }),
             KeyCode::Tab | KeyCode::BackTab => self.toggle_field(),
-            KeyCode::Enter =>
-                return Ok(Some(LoginCredentials::from(take(self)))),
+            KeyCode::Enter => {
+                let credentials = LoginCredentials::from(take(self));
+                self.current = CurrentInput::Submitting;
+                return Ok(Some(credentials));
+            }
             _ => (),
         }
         Ok(None)
+    }
+
+    fn update(&mut self, response_data: Self::ResponseData) {
+        self.error = response_data;
+        self.current = CurrentInput::default();
     }
 }
 

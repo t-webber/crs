@@ -1,14 +1,17 @@
-//! App struct to hold the data and state of the TUI
+//! App struct to hold the data and state of the TU
 
 use std::io::Stdout;
 
 use backend::user::User;
 use color_eyre::Result;
+use color_eyre::eyre::Context as _;
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::read;
 
-use crate::ui::{Component as _, LoginCredentials, Screen, ScreenUpdate};
+use crate::ui::LoginCredentials;
+use crate::ui::component::Component as _;
+use crate::ui::screen::{Screen, ScreenUpdate};
 
 /// Holds the data and the state of the TUI
 pub struct App {
@@ -23,6 +26,11 @@ pub struct App {
 #[expect(clippy::arbitrary_source_item_ordering, reason = "run order")]
 impl App {
     /// Creates a new instance of [`Self`]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when
+    /// [`ClientBuild::build`](backend::matrix_sdk::ClientBuilder::build) does.
     pub async fn new(homeserver_url: &str) -> Result<Self> {
         Ok(Self {
             user:     User::new(homeserver_url).await?,
@@ -32,6 +40,11 @@ impl App {
     }
 
     /// Runs the TUI
+    ///
+    /// The TUI is drawn, then waits for events: key pressed, mouse clicked,
+    /// window resized, etc. and handles that event.
+    ///
+    /// Once the event is handled, the UI components are updated and the ²;
     pub async fn run(&mut self) -> Result<()> {
         loop {
             self.terminal.draw(|frame| self.screen.draw(frame))?;
@@ -41,7 +54,9 @@ impl App {
                 ScreenUpdate::AttemptLogIn(LoginCredentials {
                     username,
                     password,
-                }) => self.user.login(username, &password).await?,
+                }) => self
+                    .screen
+                    .update(self.user.login(username, &password).await),
             }
         }
     }

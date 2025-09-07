@@ -9,7 +9,9 @@
     clippy::implicit_return,
     clippy::question_mark_used,
     clippy::missing_inline_in_public_items,
-    reason = "bad lint"
+    clippy::pub_use,
+    reason = "bad lints"
 )]
 
 pub mod user;
+pub use matrix_sdk;
