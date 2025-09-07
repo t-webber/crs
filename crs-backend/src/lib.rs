@@ -14,4 +14,3 @@
 )]
 
 pub mod user;
-pub use matrix_sdk;

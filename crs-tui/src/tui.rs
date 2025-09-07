@@ -52,14 +52,14 @@ impl Tui {
     /// Once the event is handled, the UI components are updated and the ²;
     pub async fn run(&mut self) -> Result<()> {
         loop {
-            self.terminal.draw(|frame| self.app.draw(frame))?;
+            self.terminal.draw(|frame| self.app.draw(frame, frame.area()))?;
             let event = read()?;
             if let Event::Key(key_event) = event
                 && key_event.code == KeyCode::Esc
             {
                 break Ok(());
             }
-            self.app.on_event(event).await?;
+            self.app.on_event(event).await;
         }
     }
 

@@ -15,6 +15,8 @@
     clippy::pub_use,
     clippy::wildcard_enum_match_arm,
     clippy::pattern_type_mismatch,
+    clippy::indexing_slicing,
+    clippy::missing_asserts_for_indexing,
     reason = "dev experience"
 )]
 #![allow(

@@ -1,24 +1,36 @@
 //! This  module contains the app, with both UI state and  matrix user.
 
-use std::rc::Rc;
+mod chat;
+mod login;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use backend::user::User;
+use ratatui::Frame;
 use ratatui::crossterm::event::Event;
+use ratatui::layout::Rect;
 
 use crate::app::chat::ChatPage;
 use crate::app::login::LoginPage;
 use crate::credentials::Credentials;
 use crate::ui::component::Component;
 
-mod chat;
-mod login;
-
+/// App containing the user, the UI state
+///
+/// This app is responsible of knowing which screen to render, and how to switch
+/// between them
 pub struct App {
+    /// Current screen rendered on in the app
     screen: Screen,
-    user:   Option<Rc<User>>,
+    /// Logged in user to communicate with the homeserver
+    user:   Option<Arc<User>>,
 }
 
 impl App {
+    /// Create a new page after an error at login
+    ///
+    /// This will repon the login page with the error message
     fn new_with_login_err(err: String) -> Self {
         Self {
             screen: Screen::Login(LoginPage::new_with_login_err(err)),
@@ -31,20 +43,17 @@ impl Component for App {
     type ResponseData = ();
     type UpdateState = ();
 
-    fn draw(&self, frame: &mut ratatui::Frame) {
+    fn draw(&self, frame: &mut Frame, area: Rect) {
         match &self.screen {
-            Screen::Login(login) => login.draw(frame),
-            Screen::Chat(chat) => chat.draw(frame),
+            Screen::Login(login) => login.draw(frame, area),
+            Screen::Chat(chat) => chat.draw(frame, area),
         }
     }
 
-    async fn on_event(
-        &mut self,
-        event: Event,
-    ) -> color_eyre::Result<Option<Self::UpdateState>> {
+    async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         match &mut self.screen {
             Screen::Login(login_page) =>
-                if let Some(credentials) = login_page.on_event(event).await? {
+                if let Some(credentials) = login_page.on_event(event).await {
                     match credentials.login().await {
                         Ok(user) => *self = Self::from(user),
                         Err(err) =>
@@ -55,7 +64,7 @@ impl Component for App {
                 chat_page.on_event(event).await?;
             }
         }
-        Ok(None)
+        None
     }
 }
 
@@ -67,9 +76,9 @@ impl From<Credentials<String>> for App {
 
 impl From<User> for App {
     fn from(value: User) -> Self {
-        let user = Rc::new(value);
+        let user = Arc::new(value);
         Self {
-            screen: Screen::Chat(ChatPage::new(user.clone())),
+            screen: Screen::Chat(ChatPage::new(Arc::clone(&user))),
             user:   Some(user),
         }
     }

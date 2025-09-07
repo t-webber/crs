@@ -14,11 +14,9 @@ impl Screen {
 }
 
 impl Screen {
-    fn new(credentials: Credentials<String>) -> Self {
+    fn new(value: Credentials<String>) -> Self {
         Self::Login(LoginPage::from(value))
     }
-
-    fn new_with_login_err(err: String) -> Self {}
 }
 
 impl Component for Screen {

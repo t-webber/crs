@@ -3,9 +3,9 @@
 //!
 //! It defines how it communicates with the core app, in both directions.
 
-use color_eyre::Result;
 use ratatui::Frame;
 use ratatui::crossterm::event::Event;
+use ratatui::layout::Rect;
 
 /// Trait to define components present in the app
 ///
@@ -23,7 +23,7 @@ use ratatui::crossterm::event::Event;
 #[expect(clippy::arbitrary_source_item_ordering, reason = "chrological")]
 pub trait Component {
     /// Renders the component on the given frame
-    fn draw(&self, frame: &mut Frame);
+    fn draw(&self, frame: &mut Frame, area: Rect);
 
     /// Data returned to the parent component on update
     ///
@@ -42,8 +42,8 @@ pub trait Component {
     fn on_event(
         &mut self,
         event: Event,
-    ) -> impl Future<Output = Result<Option<Self::UpdateState>>> {
-        async { Ok(None) }
+    ) -> impl Future<Output = Option<Self::UpdateState>> {
+        async { None }
     }
 
     /// Data provided by the parent in response to an update
