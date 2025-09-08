@@ -1,11 +1,16 @@
+use matrix_sdk::room::{Messages, MessagesOptions};
 use matrix_sdk::{Room, StoreError};
 
 /// Interface to display a room
+///
+/// If one of the fields failed to load, the field will contain an error.
 pub struct DisplayRoom {
-    /// Room's name
-    name: Result<String, StoreError>,
     /// Matrix room
-    room: Room,
+    messages: Result<Messages, matrix_sdk::Error>,
+    /// Room's list of messages
+    name:     Result<String, StoreError>,
+    /// Inner associated matrix room
+    room:     Room,
 }
 
 impl DisplayRoom {
@@ -17,6 +22,7 @@ impl DisplayRoom {
     /// Create a new display room from a [`Room`]
     pub async fn new(room: Room) -> Self {
         let name = room.display_name().await.map(|name| name.to_string());
-        Self { name, room }
+        let messages = room.messages(MessagesOptions::forward()).await;
+        Self { messages, name, room }
     }
 }

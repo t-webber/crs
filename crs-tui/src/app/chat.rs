@@ -2,6 +2,7 @@
 
 extern crate alloc;
 use alloc::sync::Arc;
+use std::sync::Mutex;
 
 use backend::room::DisplayRoom;
 use backend::user::User;
@@ -19,15 +20,22 @@ pub struct ChatPage {
     /// Room currently opened in the chat panel
     current_room: usize,
     /// Rooms visible by the user
-    rooms:        Vec<DisplayRoom>,
+    rooms:        Arc<Mutex<Vec<DisplayRoom>>>,
     /// User to interact with matrix server
     user:         Arc<User>,
 }
 
 impl ChatPage {
     /// Create a new chat page with the given logged in user
-    pub async fn new(user: Arc<User>) -> Self {
-        let rooms = user.list_rooms().await;
+    pub fn new(user: Arc<User>) -> Self {
+        let rooms = Arc::new(Mutex::new(vec![]));
+        let rooms_adder = rooms.clone();
+        let user_adder = user.clone();
+        tokio::spawn(async move {
+            let on_room_load =
+                move |room| rooms_adder.lock().unwrap().push(room);
+            user_adder.load_rooms(on_room_load).await;
+        });
         Self { rooms, user, current_room: 0 }
     }
 }
@@ -41,6 +49,8 @@ impl Component for ChatPage {
 
         let name_list = self
             .rooms
+            .lock()
+            .unwrap()
             .iter()
             .enumerate()
             .map(|(idx, room)| {
@@ -71,7 +81,7 @@ impl Component for ChatPage {
                 self.current_room = self.current_room.saturating_sub(1),
             KeyCode::Down => {
                 let new_index = self.current_room.saturating_add(1);
-                if new_index < self.rooms.len() {
+                if new_index < self.rooms.lock().unwrap().len() {
                     self.current_room = new_index;
                 }
             }

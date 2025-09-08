@@ -2,6 +2,7 @@
 
 use core::convert::Infallible;
 use core::time::Duration;
+use std::collections::HashSet;
 use std::thread;
 
 use matrix_sdk::config::SyncSettings;
@@ -10,7 +11,7 @@ use matrix_sdk::ruma::UserId;
 use matrix_sdk::ruma::api::client::room::create_room::v3::Request as CreateRoomRequest;
 use matrix_sdk::ruma::events::room::message::SyncRoomMessageEvent;
 use matrix_sdk::{Client, ClientBuildError, Error, Room};
-use tokio::task::JoinHandle;
+use tokio::task::{JoinError, JoinHandle};
 
 use crate::room::DisplayRoom;
 
@@ -75,6 +76,39 @@ impl User {
             rooms.push(DisplayRoom::new(room).await);
         }
         rooms
+    }
+
+    /// Loads the rooms concurrently and give the room when ready
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when one of the tokio tasks paniced.
+    ///
+    /// This doesn't return an error if the room failed to load, the room will
+    /// cotnain results. Refer to [`DisplayRoom`] for more information.
+    pub async fn load_rooms<OnRoomLoad>(
+        &self,
+        on_room_load: OnRoomLoad,
+    ) -> Result<(), JoinError>
+    where
+        OnRoomLoad: Fn(DisplayRoom) + Clone + Send + Sync + 'static,
+    {
+        let rooms = self.client.rooms();
+
+        let mut futures = vec![];
+        for room in rooms {
+            let callback = on_room_load.clone();
+            let handle = tokio::spawn(async move {
+                callback(DisplayRoom::new(room).await);
+            });
+            futures.push(handle);
+        }
+
+        for handle in futures {
+            handle.await?;
+        }
+
+        Ok(())
     }
 
     /// Log the user in with credentials

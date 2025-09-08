@@ -43,7 +43,7 @@ impl App {
         let sharable_user = Arc::new(user);
         let _handle = sharable_user.enable_sync();
         let _room = sharable_user.wait_until_visible_room().await;
-        let page = ChatPage::new(Arc::clone(&sharable_user)).await;
+        let page = ChatPage::new(Arc::clone(&sharable_user));
         Self { screen: Screen::Chat(page), user: Some(sharable_user) }
     }
 }

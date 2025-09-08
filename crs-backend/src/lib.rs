@@ -11,6 +11,7 @@
     clippy::question_mark_used,
     clippy::missing_inline_in_public_items,
     clippy::pub_use,
+    clippy::module_name_repetitions,
     reason = "bad lints"
 )]
 
