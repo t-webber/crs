@@ -5,20 +5,17 @@ use alloc::sync::Arc;
 use std::sync::Mutex;
 
 use backend::room::DisplayRoom;
-use backend::user::User;
 use ratatui::Frame;
 use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind};
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
-use ratatui::widgets::{List, ListItem};
+use ratatui::widgets::{Block, List, ListItem};
 
 use crate::ui::component::Component;
 
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
-pub struct ChatPage {
-    /// Room selectedly opened in the chat panel
-    open_room:     usize,
+pub struct RoomList {
     /// Rooms visible by the user
     rooms:         Arc<Mutex<Vec<DisplayRoom>>>,
     /// Room selected on the side bar with the list of chats.
@@ -26,30 +23,20 @@ pub struct ChatPage {
     /// Press enter to open this room in the chat panel, and use arrows to
     /// selected another room.
     selected_room: usize,
-    /// User to interact with matrix server
-    user:          Arc<User>,
 }
 
-impl ChatPage {
+impl RoomList {
     /// Create a new chat page with the given logged in user
     ///
     /// The rooms and their content will load in the background.
-    pub fn new(user: Arc<User>) -> Self {
-        let rooms = Arc::new(Mutex::new(vec![]));
-        let rooms_adder = Arc::clone(&rooms);
-        let user_adder = Arc::clone(&user);
-        let _handle = tokio::spawn(async move {
-            let on_room_load =
-                move |room| rooms_adder.lock().unwrap().push(room);
-            user_adder.load_rooms(on_room_load).await
-        });
-        Self { rooms, user, selected_room: 0, open_room: 0 }
+    pub const fn new(rooms: Arc<Mutex<Vec<DisplayRoom>>>) -> Self {
+        Self { rooms, selected_room: 0 }
     }
 }
 
-impl Component for ChatPage {
+impl Component for RoomList {
     type ResponseData = ();
-    type UpdateState = ();
+    type UpdateState = usize;
 
     fn draw(&self, frame: &mut Frame, area: Rect) {
         let unknown = String::from("<unknown>");
@@ -75,7 +62,9 @@ impl Component for ChatPage {
                 .collect::<Vec<_>>()
         };
 
-        let list = List::new(name_list);
+        let list = List::new(name_list).block(
+            Block::bordered().border_style(Style::default().fg(Color::Gray)),
+        );
 
         frame.render_widget(list, area);
     }
@@ -96,16 +85,9 @@ impl Component for ChatPage {
                     self.selected_room = new_index;
                 }
             }
+            KeyCode::Enter => return Some(self.selected_room),
             _ => (),
         }
         None
     }
-}
-
-/// Room displayed in the list of rooms
-pub struct Room {
-    /// Id of the room
-    id:   String,
-    /// Name of the room
-    name: String,
 }
