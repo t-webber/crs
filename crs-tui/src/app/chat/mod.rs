@@ -1,32 +1,36 @@
 //! Main page displayed with the chats
 
+mod conversation;
 mod menu;
+
 extern crate alloc;
 use alloc::sync::Arc;
+use core::convert::Infallible;
 use std::sync::Mutex;
 
 use backend::room::DisplayRoom;
 use backend::user::User;
 use ratatui::Frame;
 use ratatui::crossterm::event::Event;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Color, Style};
-use ratatui::text::Text;
+use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use ratatui::widgets::{Paragraph, Wrap};
 
+use crate::app::chat::conversation::Conversation;
 use crate::app::chat::menu::RoomList;
 use crate::ui::component::Component;
+use crate::ui::widgets::linear_center;
 
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
 pub struct ChatPage {
+    /// Open conversation
+    conversation: Option<Conversation>,
     /// Menu with the list of rooms
-    menu:      RoomList,
-    /// Room currently opened in the chat panel
-    open_room: usize,
+    menu:         RoomList,
     /// Rooms visible by the user
-    rooms:     Arc<Mutex<Vec<DisplayRoom>>>,
+    rooms:        Arc<Mutex<Vec<Arc<DisplayRoom>>>>,
     /// User to interact with matrix server
-    user:      Arc<User>,
+    user:         Arc<User>,
 }
 
 impl ChatPage {
@@ -39,17 +43,17 @@ impl ChatPage {
         let user_adder = Arc::clone(&user);
         let _handle = tokio::spawn(async move {
             let on_room_load =
-                move |room| rooms_adder.lock().unwrap().push(room);
+                move |room| rooms_adder.lock().unwrap().push(Arc::new(room));
             user_adder.load_rooms(on_room_load).await
         });
         let menu = RoomList::new(Arc::clone(&rooms));
-        Self { rooms, user, open_room: 0, menu }
+        Self { rooms, user, menu, conversation: None }
     }
 }
 
 impl Component for ChatPage {
-    type ResponseData = ();
-    type UpdateState = ();
+    type ResponseData = Infallible;
+    type UpdateState = Infallible;
 
     fn draw(&self, frame: &mut Frame, area: Rect) {
         let layout = Layout::new(Direction::Horizontal, [
@@ -59,24 +63,30 @@ impl Component for ChatPage {
         .split(area);
 
         self.menu.draw(frame, layout[0]);
+        if let Some(conversation) = &self.conversation {
+            conversation.draw(frame, layout[1]);
+        } else {
+            let center = linear_center(
+                Constraint::Length(2),
+                Direction::Vertical,
+                layout[1],
+            );
+            let paragraph = Paragraph::new(
+                "Use <Up> and <Down> to find the conversation then <Enter> to \
+                 open it here.",
+            )
+            .wrap(Wrap { trim: true })
+            .alignment(Alignment::Center);
 
-        let rooms = self.rooms.lock().unwrap();
-
-        let open_room_name = rooms.get(self.open_room).map_or_else(
-            || Text::from("Loading..."),
-            |room| match room.as_name() {
-                Ok(name) => Text::from(name.as_str()),
-                Err(err) => Text::from(format!("Failed to load room: {err}"))
-                    .style(Style::default().fg(Color::Red)),
-            },
-        );
-
-        frame.render_widget(open_room_name, layout[1]);
-        drop(rooms);
+            frame.render_widget(paragraph, center);
+        }
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
-        self.open_room = self.menu.on_event(event).await?;
+        let index = self.menu.on_event(event).await?;
+        self.conversation = Some(Conversation::new(Arc::clone(
+            &self.rooms.lock().unwrap()[index],
+        )));
         None
     }
 }

@@ -584,6 +584,7 @@ name = "crs_backend"
 version = "0.1.0"
 dependencies = [
  "matrix-sdk",
+ "serde",
  "tokio",
  "tracing-subscriber",
 ]

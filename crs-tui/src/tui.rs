@@ -91,7 +91,11 @@ impl Tui {
         }
     }
 
-    /// Deletes the app and clean up
+    /// Deletes the app and cleans up
+    ///
+    /// This must be run even if the app crashes to restore the terminal to
+    /// normal usage. If forgotten, the user can restore the terminal with the
+    /// `stty sane` (on Linux).
     #[expect(clippy::unused_self, reason = "the goal is to destroy the object")]
     pub fn delete(self) {
         ratatui::restore();

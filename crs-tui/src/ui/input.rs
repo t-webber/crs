@@ -74,7 +74,7 @@ impl Input {
 }
 
 impl Component for Input {
-    type ResponseData = ();
+    type ResponseData = Infallible;
     type UpdateState = Infallible;
 
     fn draw(&self, frame: &mut Frame, area: Rect) {

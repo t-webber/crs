@@ -1,7 +1,8 @@
-//! Main page displayed with the chats
+//! Selector to choose which menu to open
 
 extern crate alloc;
 use alloc::sync::Arc;
+use core::convert::Infallible;
 use std::sync::Mutex;
 
 use backend::room::DisplayRoom;
@@ -17,7 +18,7 @@ use crate::ui::component::Component;
 /// communicate in those chats.
 pub struct RoomList {
     /// Rooms visible by the user
-    rooms:         Arc<Mutex<Vec<DisplayRoom>>>,
+    rooms:         Arc<Mutex<Vec<Arc<DisplayRoom>>>>,
     /// Room selected on the side bar with the list of chats.
     ///
     /// Press enter to open this room in the chat panel, and use arrows to
@@ -26,16 +27,16 @@ pub struct RoomList {
 }
 
 impl RoomList {
-    /// Create a new chat page with the given logged in user
+    /// Create a new menu list with the same rooms than the chat page.
     ///
-    /// The rooms and their content will load in the background.
-    pub const fn new(rooms: Arc<Mutex<Vec<DisplayRoom>>>) -> Self {
+    /// The rooms and their content are loaded by the chat page in the backend.
+    pub const fn new(rooms: Arc<Mutex<Vec<Arc<DisplayRoom>>>>) -> Self {
         Self { rooms, selected_room: 0 }
     }
 }
 
 impl Component for RoomList {
-    type ResponseData = ();
+    type ResponseData = Infallible;
     type UpdateState = usize;
 
     fn draw(&self, frame: &mut Frame, area: Rect) {
@@ -50,8 +51,7 @@ impl Component for RoomList {
                 .iter()
                 .enumerate()
                 .map(|(idx, room)| {
-                    let name =
-                        room.as_name().as_ref().unwrap_or(&unknown).as_str();
+                    let name = room.as_name().unwrap_or(&unknown).as_str();
                     if idx == self.selected_room {
                         ListItem::new(format!(">{name}",))
                             .style(Style::new().fg(Color::Green))
