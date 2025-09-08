@@ -17,26 +17,33 @@ use crate::ui::component::Component;
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
 pub struct ChatPage {
-    /// Room currently opened in the chat panel
-    current_room: usize,
+    /// Room selectedly opened in the chat panel
+    open_room:     usize,
     /// Rooms visible by the user
-    rooms:        Arc<Mutex<Vec<DisplayRoom>>>,
+    rooms:         Arc<Mutex<Vec<DisplayRoom>>>,
+    /// Room selected on the side bar with the list of chats.
+    ///
+    /// Press enter to open this room in the chat panel, and use arrows to
+    /// selected another room.
+    selected_room: usize,
     /// User to interact with matrix server
-    user:         Arc<User>,
+    user:          Arc<User>,
 }
 
 impl ChatPage {
     /// Create a new chat page with the given logged in user
+    ///
+    /// The rooms and their content will load in the background.
     pub fn new(user: Arc<User>) -> Self {
         let rooms = Arc::new(Mutex::new(vec![]));
-        let rooms_adder = rooms.clone();
-        let user_adder = user.clone();
-        tokio::spawn(async move {
+        let rooms_adder = Arc::clone(&rooms);
+        let user_adder = Arc::clone(&user);
+        let _handle = tokio::spawn(async move {
             let on_room_load =
                 move |room| rooms_adder.lock().unwrap().push(room);
-            user_adder.load_rooms(on_room_load).await;
+            user_adder.load_rooms(on_room_load).await
         });
-        Self { rooms, user, current_room: 0 }
+        Self { rooms, user, selected_room: 0, open_room: 0 }
     }
 }
 
@@ -55,7 +62,7 @@ impl Component for ChatPage {
             .enumerate()
             .map(|(idx, room)| {
                 let name = room.as_name().as_ref().unwrap_or(&unknown).as_str();
-                if idx == self.current_room {
+                if idx == self.selected_room {
                     ListItem::new(format!(">{name}",))
                         .style(Style::new().fg(Color::Green))
                 } else {
@@ -78,11 +85,11 @@ impl Component for ChatPage {
         }
         match key_event.code {
             KeyCode::Up =>
-                self.current_room = self.current_room.saturating_sub(1),
+                self.selected_room = self.selected_room.saturating_sub(1),
             KeyCode::Down => {
-                let new_index = self.current_room.saturating_add(1);
+                let new_index = self.selected_room.saturating_add(1);
                 if new_index < self.rooms.lock().unwrap().len() {
-                    self.current_room = new_index;
+                    self.selected_room = new_index;
                 }
             }
             _ => (),

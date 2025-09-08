@@ -28,8 +28,8 @@ async fn main() {
 
     let synchronisation_handler = user.enable_sync();
 
-    let room = user.wait_until_visible_room();
-    room.send(RoomMessageEventContent::text_plain("Hello from Rust"))
+    let room = user.wait_until_visible_room().await;
+    room.send_plain("Hello from Rust")
         .await
         .unwrap_or_else(|err| panic!("Failed to say hello: {err}"));
 

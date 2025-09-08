@@ -2,7 +2,6 @@
 
 use core::convert::Infallible;
 use core::time::Duration;
-use std::collections::HashSet;
 use std::thread;
 
 use matrix_sdk::config::SyncSettings;

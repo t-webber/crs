@@ -1,4 +1,5 @@
 use matrix_sdk::room::{Messages, MessagesOptions};
+use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
 use matrix_sdk::{Room, StoreError};
 
 /// Interface to display a room
@@ -24,5 +25,15 @@ impl DisplayRoom {
         let name = room.display_name().await.map(|name| name.to_string());
         let messages = room.messages(MessagesOptions::forward()).await;
         Self { messages, name, room }
+    }
+
+    /// Sends a message in a room
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when join handle crashes.
+    pub async fn send_plain(&self, msg: &str) -> Result<(), matrix_sdk::Error> {
+        self.room.send(RoomMessageEventContent::text_plain(msg)).await?;
+        Ok(())
     }
 }
