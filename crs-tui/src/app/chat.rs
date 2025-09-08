@@ -54,22 +54,26 @@ impl Component for ChatPage {
     fn draw(&self, frame: &mut Frame, area: Rect) {
         let unknown = String::from("<unknown>");
 
-        let name_list = self
-            .rooms
-            .lock()
-            .unwrap()
-            .iter()
-            .enumerate()
-            .map(|(idx, room)| {
-                let name = room.as_name().as_ref().unwrap_or(&unknown).as_str();
-                if idx == self.selected_room {
-                    ListItem::new(format!(">{name}",))
-                        .style(Style::new().fg(Color::Green))
-                } else {
-                    ListItem::new(format!(" {name}",))
-                }
-            })
-            .collect::<Vec<_>>();
+        let name_list = if self.rooms.lock().unwrap().is_empty() {
+            vec![ListItem::new("no rooms")]
+        } else {
+            self.rooms
+                .lock()
+                .unwrap()
+                .iter()
+                .enumerate()
+                .map(|(idx, room)| {
+                    let name =
+                        room.as_name().as_ref().unwrap_or(&unknown).as_str();
+                    if idx == self.selected_room {
+                        ListItem::new(format!(">{name}",))
+                            .style(Style::new().fg(Color::Green))
+                    } else {
+                        ListItem::new(format!(" {name}",))
+                    }
+                })
+                .collect::<Vec<_>>()
+        };
 
         let list = List::new(name_list);
 

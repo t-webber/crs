@@ -1,10 +1,11 @@
 //! Holds the data and manages the terminal for the TUI
 
+use core::time::Duration;
 use std::io::{self, Stdout};
 
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
-use ratatui::crossterm::event::{Event, KeyCode, read};
+use ratatui::crossterm::event::{Event, KeyCode, poll, read};
 
 use crate::app::App;
 use crate::credentials::Credentials;
@@ -75,13 +76,17 @@ impl Tui {
     /// The TUI is drawn, then waits for events: key pressed, mouse clicked,
     /// window resized, etc. and handles that event.
     ///
-    /// Once the event is handled, the UI components are updated and the ²;
+    /// Once the event is handled, the UI components are updated and redrawn.
+    ///
+    /// If no event occurs, the app is refr5sh every 200 ms.
     pub async fn run(&mut self) -> Result<(), io::Error> {
         loop {
             self.draw()?;
-            let event = read()?;
-            if self.on_event(event).await? {
-                break Ok(());
+            if poll(Duration::from_millis(200))? {
+                let event = read()?;
+                if self.on_event(event).await? {
+                    break Ok(());
+                }
             }
         }
     }
