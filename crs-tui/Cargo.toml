@@ -2,10 +2,23 @@
 name = "crs-tui"
 version = "0.1.0"
 edition = "2024"
+description = "A TUI to chat accross any platform from the same app."
+license = "MIT OR Apache-2.0"
+authors = ["Tom Webber"]
+repository = "https://github.com/t-webber/crs"
+readme = "../README.md"
+keywords = ["mautrix", "synchronisation", "api", "chat"]
+categories = [
+  "command-line-utilities",
+  "network-programming",
+  "web-programming",
+  "data-structures",
+  "utilities",
+]
 
 [dependencies]
 color-eyre = "0.6.5"
 ratatui = "0.29.0"
-crs_backend = { path = "../crs-backend/" }
+crs-backend = { path = "../crs-backend/" }
 tokio = { version = "1.47.1", features = ["full"] }
 dotenv = "0.15.0"

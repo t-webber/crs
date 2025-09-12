@@ -569,24 +569,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "crs-tui"
-version = "0.1.0"
-dependencies = [
- "color-eyre",
- "crs_backend",
- "dotenv",
- "ratatui",
- "tokio",
-]
-
-[[package]]
-name = "crs_backend"
+name = "crs-backend"
 version = "0.1.0"
 dependencies = [
  "matrix-sdk",
  "serde",
  "tokio",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "crs-tui"
+version = "0.1.0"
+dependencies = [
+ "color-eyre",
+ "crs-backend",
+ "dotenv",
+ "ratatui",
+ "tokio",
 ]
 
 [[package]]

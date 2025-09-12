@@ -1,3 +1,6 @@
+//! Interface to store the useful data of a room (messages, name, handle, etc.)
+//! to interface it simply.
+
 use matrix_sdk::room::MessagesOptions;
 use matrix_sdk::ruma::UInt;
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;

@@ -1,7 +1,20 @@
 [package]
-name = "crs_backend"
+name = "crs-backend"
 version = "0.1.0"
 edition = "2024"
+description = "Interface to expose the Mautrix connection logic"
+license = "MIT OR Apache-2.0"
+authors = ["Tom Webber"]
+repository = "https://github.com/t-webber/crs"
+readme = "../README.md"
+keywords = ["TUI", "ratatui", "chat", "mautrix", "client"]
+categories = [
+  "command-line-utilities",
+  "network-programming",
+  "web-programming",
+  "data-structures",
+  "utilities",
+]
 
 [dependencies]
 matrix-sdk = { version = "0.13.0" }

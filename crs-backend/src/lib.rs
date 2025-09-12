@@ -3,7 +3,30 @@
 //! Handles connections to the server and updates the client data on incomming
 //! messages.
 
-#![warn(clippy::pedantic, clippy::restriction, clippy::nursery)]
+#![warn(
+    missing_docs,
+    warnings,
+    deprecated_safe,
+    future_incompatible,
+    keyword_idents,
+    let_underscore,
+    nonstandard_style,
+    refining_impl_trait,
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    rust_2021_compatibility,
+    rust_2024_compatibility,
+    unused,
+    clippy::all,
+    clippy::pedantic,
+    clippy::style,
+    clippy::perf,
+    clippy::complexity,
+    clippy::correctness,
+    clippy::restriction,
+    clippy::nursery,
+    clippy::cargo
+)]
 #![expect(clippy::blanket_clippy_restriction_lints, reason = "import them all")]
 #![allow(clippy::separated_literal_suffix, reason = "chosen style")]
 #![allow(

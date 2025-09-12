@@ -23,7 +23,7 @@ use ratatui::layout::Rect;
 #[expect(clippy::arbitrary_source_item_ordering, reason = "chrological")]
 pub trait Component {
     /// Renders the component on the given frame
-    fn draw(&self, frame: &mut Frame, area: Rect);
+    fn draw(&self, frame: &mut Frame<'_>, area: Rect);
 
     /// Data returned to the parent component on update
     ///
