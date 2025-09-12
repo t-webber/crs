@@ -52,7 +52,7 @@ impl Component for App {
     type ResponseData = String;
     type UpdateState = Credentials<String>;
 
-    fn draw(&self, frame: &mut Frame, area: Rect) {
+    fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         match &self.screen {
             Screen::Login(login) => login.draw(frame, area),
             Screen::Chat(chat) => chat.draw(frame, area),

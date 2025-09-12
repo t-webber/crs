@@ -131,12 +131,8 @@ impl LoginPage {
     }
 
     /// Fill the form with the current values
-    #[expect(
-        clippy::indexing_slicing,
-        clippy::missing_asserts_for_indexing,
-        reason = "len = 3"
-    )]
-    fn render_form(&self, frame: &mut Frame, area: Rect) {
+    #[expect(clippy::indexing_slicing, reason = "len = 3")]
+    fn render_form(&self, frame: &mut Frame<'_>, area: Rect) {
         let input_height = Input::HEIGHT;
 
         let form = Layout::default()
@@ -167,7 +163,7 @@ impl Component for LoginPage {
     type ResponseData = String;
     type UpdateState = Credentials<String>;
 
-    fn draw(&self, frame: &mut Frame, area: Rect) {
+    fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let instructions = Self::instructions();
         let minimum_width = instructions.width.saturating_add(2);
         let popup_border = Self::popup_border(instructions);

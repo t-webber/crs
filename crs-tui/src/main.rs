@@ -29,6 +29,7 @@ mod app;
 mod credentials;
 mod tui;
 mod ui;
+mod utils;
 
 use dotenv::dotenv;
 

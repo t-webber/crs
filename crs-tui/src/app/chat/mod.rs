@@ -19,6 +19,7 @@ use crate::app::chat::conversation::Conversation;
 use crate::app::chat::menu::RoomList;
 use crate::ui::component::Component;
 use crate::ui::widgets::linear_center;
+use crate::utils::safe_unlock;
 
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
@@ -42,8 +43,9 @@ impl ChatPage {
         let rooms_adder = Arc::clone(&rooms);
         let user_adder = Arc::clone(&user);
         let _handle = tokio::spawn(async move {
-            let on_room_load =
-                move |room| rooms_adder.lock().unwrap().push(Arc::new(room));
+            let on_room_load = move |room: DisplayRoom| {
+                safe_unlock(&rooms_adder).push(Arc::new(room));
+            };
             user_adder.load_rooms(on_room_load).await
         });
         let menu = RoomList::new(Arc::clone(&rooms));
@@ -55,7 +57,7 @@ impl Component for ChatPage {
     type ResponseData = Infallible;
     type UpdateState = Infallible;
 
-    fn draw(&self, frame: &mut Frame, area: Rect) {
+    fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let layout = Layout::new(Direction::Horizontal, [
             Constraint::Percentage(30),
             Constraint::Percentage(70),
@@ -85,7 +87,7 @@ impl Component for ChatPage {
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         let index = self.menu.on_event(event).await?;
         self.conversation = Some(Conversation::new(Arc::clone(
-            &self.rooms.lock().unwrap()[index],
+            &safe_unlock(&self.rooms)[index],
         )));
         None
     }

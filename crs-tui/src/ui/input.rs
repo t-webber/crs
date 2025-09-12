@@ -77,7 +77,7 @@ impl Component for Input {
     type ResponseData = Infallible;
     type UpdateState = Infallible;
 
-    fn draw(&self, frame: &mut Frame, area: Rect) {
+    fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints([

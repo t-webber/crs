@@ -13,6 +13,7 @@ use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, List, ListItem};
 
 use crate::ui::component::Component;
+use crate::utils::safe_unlock;
 
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
@@ -39,15 +40,13 @@ impl Component for RoomList {
     type ResponseData = Infallible;
     type UpdateState = usize;
 
-    fn draw(&self, frame: &mut Frame, area: Rect) {
+    fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let unknown = String::from("<unknown>");
 
-        let name_list = if self.rooms.lock().unwrap().is_empty() {
+        let name_list = if safe_unlock(&self.rooms).is_empty() {
             vec![ListItem::new("no rooms")]
         } else {
-            self.rooms
-                .lock()
-                .unwrap()
+            safe_unlock(&self.rooms)
                 .iter()
                 .enumerate()
                 .map(|(idx, room)| {
@@ -81,7 +80,7 @@ impl Component for RoomList {
                 self.selected_room = self.selected_room.saturating_sub(1),
             KeyCode::Down => {
                 let new_index = self.selected_room.saturating_add(1);
-                if new_index < self.rooms.lock().unwrap().len() {
+                if new_index < safe_unlock(&self.rooms).len() {
                     self.selected_room = new_index;
                 }
             }
