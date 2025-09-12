@@ -3,7 +3,7 @@
 
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::Stylize as _;
-use ratatui::text::Line;
+use ratatui::text::{Line, Span};
 
 /// Widget to display instructions on the screen
 pub struct Instructions<'text> {
@@ -13,30 +13,54 @@ pub struct Instructions<'text> {
     pub width: u16,
 }
 
-impl<'text> Instructions<'text> {
-    /// Formats a list of instructions to display on the screen for keys to
-    /// press.
-    ///
-    /// # Arguments
-    ///
-    /// Pass in input a list of couples:
-    /// - the first element is the action description
-    /// - the second element is the key to press
-    ///
-    /// Keep it short or it won't fit on the screen!
-    pub fn new(instructions: &[(&'text str, &'text str)]) -> Self {
-        let mut width: u16 = 1;
-        let mut line_elements = vec![" ".into()];
-        for &(action, key) in instructions {
-            width = width
-                .saturating_add(saturating_cast(action.len()))
-                .saturating_add(saturating_cast(action.len()))
-                .saturating_add(2);
+/// Widget to display keymap instructions on the screen.
+///
+/// # Examples
+///
+/// To display "Press <Enter> to open., use this:
+///
+/// ```rust
+/// use crate::ui::widget::*;
+///
+/// let Instructions { line, width } = InstructionsBuilder::default()
+///     .text("Press ")
+///     .key("Enter")
+///     .text(" to open.")
+///     .build();
+/// ```
+#[derive(Default)]
+pub struct InstructionsBuilder<'text> {
+    /// Elements of the line to be displayed, texts and keys.
+    elements: Vec<Span<'text>>,
+    /// Total width of the final text
+    width:    u16,
+}
 
-            line_elements.push(action.into());
-            line_elements.push(format!(" <{key}> ").yellow().bold());
-        }
-        Self { line: Line::from(line_elements), width }
+impl<'text> InstructionsBuilder<'text> {
+    /// Build the widget from the provided list of text and keys.
+    pub fn build(self) -> Instructions<'text> {
+        Instructions { line: Line::from(self.elements), width: self.width }
+    }
+
+    /// Add a key part.
+    pub fn key(mut self, key: &'text str) -> Self {
+        self.elements.push(format!(" <{key}> ").yellow().bold());
+        self.width = self
+            .width
+            .saturating_add(saturating_cast(key.len()))
+            .saturating_add(2);
+        self
+    }
+
+    /// Add a text part.
+    ///
+    /// Remember to add spaces.
+    ///
+    /// Also, keep it short or else it won't fit.
+    pub fn text(mut self, text: &'text str) -> Self {
+        self.elements.push(text.into());
+        self.width = self.width.saturating_add(saturating_cast(text.len()));
+        self
     }
 }
 

@@ -42,7 +42,7 @@ impl Tui {
     ) -> color_eyre::Result<Self> {
         let app = if credentials.is_full() {
             let user = credentials.fill_with_empty().login().await?;
-            App::new_with_user(user).await
+            App::new_with_user(user)
         } else {
             App::from(credentials.fill_with_empty())
         };
@@ -64,7 +64,7 @@ impl Tui {
         if let Some(credentials) = self.app.on_event(event).await {
             self.draw()?;
             match credentials.login().await {
-                Ok(user) => self.app = App::new_with_user(user).await,
+                Ok(user) => self.app = App::new_with_user(user),
                 Err(err) => self.app = App::new_with_login_err(err.to_string()),
             }
         }

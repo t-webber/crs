@@ -12,7 +12,7 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 use crate::credentials::Credentials;
 use crate::ui::component::Component;
 use crate::ui::input::Input;
-use crate::ui::widgets::{Instructions, grid_center};
+use crate::ui::widgets::{Instructions, InstructionsBuilder, grid_center};
 
 /// State differentiating the different inputs on the login page.
 ///
@@ -100,7 +100,13 @@ impl LoginPage {
 
     /// Instructions to displau in the login box's footer
     fn instructions() -> Instructions<'static> {
-        Instructions::new(&[(" Switch input", "Tab"), ("Submit", "Enter")])
+        InstructionsBuilder::default()
+            .text(" Switch input")
+            .key("Tab")
+            .text(" Submit ")
+            .key("Enter")
+            .text(" ")
+            .build()
     }
 
     /// Create a new login page with the given credentials
@@ -123,11 +129,11 @@ impl LoginPage {
 
     /// Returns the border of the popup with the title and instructions
     /// integrated in the border.
-    fn popup_border(instructions: Instructions<'static>) -> Block<'static> {
+    fn popup_border(instructions_line: Line<'static>) -> Block<'static> {
         let title = Line::from(" Login ".bold().style(Color::Green));
         Block::bordered()
             .title(title.centered())
-            .title_bottom(instructions.line.centered())
+            .title_bottom(instructions_line.centered())
     }
 
     /// Fill the form with the current values
@@ -165,9 +171,9 @@ impl Component for LoginPage {
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let instructions = Self::instructions();
-        let minimum_width = instructions.width.saturating_add(2);
-        let popup_border = Self::popup_border(instructions);
+        let popup_border = Self::popup_border(instructions.line);
 
+        let minimum_width = instructions.width.saturating_add(2);
         let popup_area = grid_center(
             Constraint::Min(minimum_width),
             Constraint::Length(3 * Input::HEIGHT + 1 + 4 + 2),

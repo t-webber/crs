@@ -18,7 +18,7 @@ use ratatui::widgets::{Paragraph, Wrap};
 use crate::app::chat::conversation::Conversation;
 use crate::app::chat::menu::RoomList;
 use crate::ui::component::Component;
-use crate::ui::widgets::linear_center;
+use crate::ui::widgets::{Instructions, InstructionsBuilder, linear_center};
 use crate::utils::safe_unlock;
 
 /// This page renders and gives the user an interface to list the chat and
@@ -68,19 +68,7 @@ impl Component for ChatPage {
         if let Some(conversation) = &self.conversation {
             conversation.draw(frame, layout[1]);
         } else {
-            let center = linear_center(
-                Constraint::Length(2),
-                Direction::Vertical,
-                layout[1],
-            );
-            let paragraph = Paragraph::new(
-                "Use <Up> and <Down> to find the conversation then <Enter> to \
-                 open it here.",
-            )
-            .wrap(Wrap { trim: true })
-            .alignment(Alignment::Center);
-
-            frame.render_widget(paragraph, center);
+            no_conversation(frame, layout[1]);
         }
     }
 
@@ -91,4 +79,34 @@ impl Component for ChatPage {
         )));
         None
     }
+}
+
+/// Displays the message for when no chat is opened.
+#[expect(
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    clippy::arithmetic_side_effects,
+    reason = "want rounded value"
+)]
+pub fn no_conversation(frame: &mut Frame<'_>, area: Rect) {
+    let Instructions { line, width } = InstructionsBuilder::default()
+        .text(" Use")
+        .key("Up")
+        .text("and")
+        .key("Down")
+        .text("to find the conversation, then")
+        .key("Enter")
+        .text("to open it here. ")
+        .build();
+
+    let height = (width / area.width).saturating_add(1);
+
+    let center =
+        linear_center(Constraint::Length(height), Direction::Vertical, area);
+
+    let paragraph = Paragraph::new(line)
+        .wrap(Wrap { trim: true })
+        .alignment(Alignment::Center);
+
+    frame.render_widget(paragraph, center);
 }
