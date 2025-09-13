@@ -28,6 +28,7 @@
     clippy::cargo
 )]
 #![expect(clippy::blanket_clippy_restriction_lints, reason = "import them all")]
+#![allow(clippy::multiple_crate_versions, reason = "needed by deps")]
 #![allow(clippy::separated_literal_suffix, reason = "chosen style")]
 #![allow(
     clippy::implicit_return,
@@ -35,6 +36,7 @@
     clippy::missing_inline_in_public_items,
     clippy::pub_use,
     clippy::module_name_repetitions,
+    clippy::single_call_fn,
     reason = "bad lints"
 )]
 

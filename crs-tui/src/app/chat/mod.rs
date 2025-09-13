@@ -1,6 +1,6 @@
 //! Main page displayed with the chats
 
-mod conversation;
+mod current_room;
 mod menu;
 
 extern crate alloc;
@@ -14,20 +14,18 @@ use crs_backend::room::DisplayRoom;
 use crs_backend::user::User;
 use ratatui::Frame;
 use ratatui::crossterm::event::Event;
-use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
-use ratatui::widgets::{Paragraph, Wrap};
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 
-use crate::app::chat::conversation::Conversation;
+use crate::app::chat::current_room::CurrentRoom;
 use crate::app::chat::menu::RoomList;
 use crate::ui::component::Component;
-use crate::ui::widgets::{InstructionsBuilder, fully_centered_content};
 use crate::utils::safe_unlock;
 
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
 pub struct ChatPage {
-    /// Currently opened conversation
-    conversation: Option<Conversation>,
+    /// Currently opened room
+    current_room: CurrentRoom,
     /// Menu with the list of rooms
     menu:         RoomList,
     /// Rooms visible by the user
@@ -43,7 +41,8 @@ impl ChatPage {
     pub fn new(user: Arc<User>) -> Self {
         let rooms = Arc::new(Mutex::new(vec![]));
         let menu = RoomList::new(Arc::clone(&rooms));
-        let mut this = Self { rooms, user, menu, conversation: None };
+        let mut this =
+            Self { rooms, user, menu, current_room: CurrentRoom::default() };
         this.synchronise_rooms();
         this
     }
@@ -88,45 +87,19 @@ impl Component for ChatPage {
         .split(area);
 
         self.menu.draw(frame, layout[0]);
-        if let Some(conversation) = &self.conversation {
-            conversation.draw(frame, layout[1]);
-        } else {
-            no_conversation(frame, layout[1]);
-        }
+        self.current_room.draw(frame, layout[1]);
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         match self.menu.on_event(event.clone()).await {
             Some(index) => {
                 let new_room = Arc::clone(&safe_unlock(&self.rooms)[index]);
-                self.conversation = Some(Conversation::new(new_room));
+                self.current_room.update(new_room);
             }
-            None =>
-                if let Some(conversation) = &mut self.conversation {
-                    conversation.on_event(event).await;
-                },
+            None => {
+                self.current_room.on_event(event).await;
+            }
         }
         None
     }
-}
-
-/// Displays the message for when no chat is opened.
-pub fn no_conversation(frame: &mut Frame<'_>, area: Rect) {
-    let instructions = InstructionsBuilder::default()
-        .text(" Use")
-        .key("Up")
-        .text("and")
-        .key("Down")
-        .text("to find the conversation, then")
-        .key("Right")
-        .text("to open it here. ")
-        .build();
-
-    let rect = fully_centered_content(instructions.width, area.width, area);
-
-    let paragraph = Paragraph::new(instructions.line)
-        .wrap(Wrap { trim: true })
-        .alignment(Alignment::Center);
-
-    frame.render_widget(paragraph, rect);
 }

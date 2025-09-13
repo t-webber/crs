@@ -92,15 +92,12 @@ pub fn linear_center(
     direction: Direction,
     area: Rect,
 ) -> Rect {
-    #[expect(clippy::indexing_slicing, reason = "len = 3")]
-    Layout::default()
-        .direction(direction)
-        .constraints([
-            Constraint::Fill(1),
-            middle_constraint,
-            Constraint::Fill(1),
-        ])
-        .split(area)[1]
+    Layout::new(direction, [
+        Constraint::Fill(1),
+        middle_constraint,
+        Constraint::Fill(1),
+    ])
+    .split(area)[1]
 }
 
 /// Center text both vertically and horizontally, adapting the constraints to

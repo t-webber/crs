@@ -1,8 +1,6 @@
 //! Interface to store the useful data of a room (messages, name, handle, etc.)
 //! to interface it simply.
 
-use std::sync::Arc;
-
 use matrix_sdk::room::MessagesOptions;
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
 use matrix_sdk::ruma::{OwnedRoomId, UInt};
@@ -64,35 +62,38 @@ impl DisplayRoom {
 
     /// Create a new display room from a [`Room`]
     pub async fn new(room: Room) -> Self {
-        let name = room.display_name().await.map(|name| name.to_string());
-        let mut opts = MessagesOptions::forward();
-        opts.limit = UInt::MAX;
-        let messages = room.messages(opts).await.map(|messages| {
-            messages
-                .chunk
-                .into_iter()
-                .filter_map(|msg| {
-                    let message = msg.into_raw();
-                    if let Ok(Some(msg_type)) =
-                        message.get_field::<String>("type")
-                        && msg_type == "m.room.message"
-                        && let Ok(Some(body)) = message.get_field("content")
-                    {
-                        Some(body)
-                    } else {
-                        None
-                    }
-                })
-                .collect()
-        });
+        let name = get_room_name(&room).await;
+        let messages = get_room_messages(&room).await;
+
         let room_id = room.room_id().to_owned();
         Self { messages, name, room, room_id }
     }
 
+    /// Refreshes the name and the messages of a room
+    pub async fn refresh(&mut self) {
+        self.update_with(
+            get_room_messages(&self.room).await,
+            get_room_name(&self.room).await,
+        );
+    }
+
     /// Updates the content of a room but the contents of another room
     pub fn update_from(&mut self, other: Self) {
-        self.messages = other.messages;
-        self.name = other.name;
+        self.update_with(other.messages, other.name);
+    }
+
+    /// Updates the content of a room with another name and some other messages.
+    fn update_with(
+        &mut self,
+        messages: Result<Vec<Message>, matrix_sdk::Error>,
+        name: Result<String, StoreError>,
+    ) {
+        if messages.is_ok() || self.messages.is_err() {
+            self.messages = messages;
+        }
+        if name.is_ok() || self.name.is_err() {
+            self.name = name;
+        }
     }
 }
 
@@ -117,12 +118,17 @@ pub struct RoomWrap(Room);
 impl RoomWrap {
     /// Accepts the invitation received to join the room.
     ///
+    /// The data is then refetched.
+    ///
     /// # Errors
     ///
     /// If the room isn't in the "Invited" or "Left" state, or for regular
     /// connection errors.
-    pub async fn accept_invitation(&self) -> Result<(), matrix_sdk::Error> {
-        self.0.join().await
+    pub async fn accept_invitation(
+        self,
+    ) -> Result<DisplayRoom, matrix_sdk::Error> {
+        self.0.join().await?;
+        Ok(DisplayRoom::new(self.0).await)
     }
 
     /// Sends a message in a room
@@ -134,4 +140,41 @@ impl RoomWrap {
         self.0.send(RoomMessageEventContent::text_plain(msg)).await?;
         Ok(())
     }
+}
+
+/// Loads the first chunk of messages of a room
+async fn get_room_messages(
+    room: &Room,
+) -> Result<Vec<Message>, matrix_sdk::Error> {
+    let mut opts = MessagesOptions::forward();
+    opts.limit = UInt::MAX;
+
+    room.messages(opts).await.map(|messages| {
+        messages
+            .chunk
+            .into_iter()
+            .filter_map(|msg| {
+                let message = msg.into_raw();
+                if let Ok(Some(msg_type)) = message.get_field::<String>("type")
+                    && msg_type == "m.room.message"
+                    && let Ok(Some(body)) = message.get_field("content")
+                {
+                    Some(body)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    })
+}
+
+/// Computes the name of a room
+///
+/// # Errors
+///
+/// Returns an error if the [algorithm][1] to compute the room name fails.
+///
+/// [1]: <https://matrix.org/docs/spec/client_server/latest#calculating-the-display-name-for-a-room>
+pub async fn get_room_name(room: &Room) -> Result<String, StoreError> {
+    room.display_name().await.map(|name| name.to_string())
 }
