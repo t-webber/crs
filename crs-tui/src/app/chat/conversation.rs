@@ -6,7 +6,7 @@ use alloc::sync::Arc;
 use core::convert::Infallible;
 use std::sync::Mutex;
 
-use backend::room::DisplayRoom;
+use crs_backend::room::DisplayRoom;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};

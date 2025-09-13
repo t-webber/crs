@@ -2,7 +2,7 @@
 
 use std::env::var;
 
-use backend::user::User;
+use crs_backend::user::User;
 
 /// Credentials to log in to the homeserver.
 pub struct Credentials<T> {

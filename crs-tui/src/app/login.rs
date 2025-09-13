@@ -1,4 +1,5 @@
-//! Login page to store pass credentials to the backend
+//! Login page to send credentials to the backend to get an authenticated matrix
+//! client.
 
 use core::mem::take;
 

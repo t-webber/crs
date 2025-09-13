@@ -68,7 +68,7 @@ impl<'text> InstructionsBuilder<'text> {
 ///
 /// If the input is too large to fit in a [`u16`]
 /// [`u16::MAX`] is used
-fn saturating_cast(value: usize) -> u16 {
+pub fn saturating_cast(value: usize) -> u16 {
     u16::try_from(value).unwrap_or(u16::MAX)
 }
 

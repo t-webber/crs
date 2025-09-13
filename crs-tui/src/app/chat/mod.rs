@@ -10,8 +10,8 @@ use core::time::Duration;
 use std::sync::Mutex;
 use std::thread;
 
-use backend::room::DisplayRoom;
-use backend::user::User;
+use crs_backend::room::DisplayRoom;
+use crs_backend::user::User;
 use ratatui::Frame;
 use ratatui::crossterm::event::Event;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
@@ -26,7 +26,7 @@ use crate::utils::safe_unlock;
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
 pub struct ChatPage {
-    /// Open conversation
+    /// Currently opened conversation
     conversation: Option<Conversation>,
     /// Menu with the list of rooms
     menu:         RoomList,
@@ -43,17 +43,18 @@ impl ChatPage {
     pub fn new(user: Arc<User>) -> Self {
         let rooms = Arc::new(Mutex::new(vec![]));
         let menu = RoomList::new(Arc::clone(&rooms));
-        let this = Self { rooms, user, menu, conversation: None };
+        let mut this = Self { rooms, user, menu, conversation: None };
         this.synchronise_rooms();
         this
     }
 
     /// Synchronise the existing rooms, including name and messages
-    fn synchronise_rooms(&self) {
+    fn synchronise_rooms(&mut self) {
         let rooms = Arc::clone(&self.rooms);
         let user = Arc::clone(&self.user);
+        user.wait_for_visible_room();
+        self.menu.end_loading();
         let _handle = tokio::spawn(async move {
-            drop(user.wait_until_visible_room().await);
             loop {
                 let local_rooms = Arc::clone(&rooms);
                 let on_room_load = move |new_room: DisplayRoom| {

@@ -5,20 +5,28 @@ use alloc::sync::Arc;
 use core::convert::Infallible;
 use std::sync::Mutex;
 
-use backend::room::DisplayRoom;
+use crs_backend::room::DisplayRoom;
 use ratatui::Frame;
 use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind};
 use ratatui::layout::{Alignment, Constraint, Rect};
 use ratatui::style::{Color, Style};
+use ratatui::text::Text;
 use ratatui::widgets::{Block, List, ListItem, Paragraph, Wrap};
 
 use crate::ui::component::Component;
-use crate::ui::widgets::{Instructions, InstructionsBuilder, grid_center};
+use crate::ui::widgets::{
+    Instructions, InstructionsBuilder, grid_center, saturating_cast
+};
 use crate::utils::safe_unlock;
 
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
 pub struct RoomList {
+    /// Indicates whether the rooms are still loading
+    ///
+    /// This is used to determine if an empty list of rooms should be
+    /// interpreted as "They are not accessible yet" or "There aren't any".
+    is_loading:    bool,
     /// Rooms visible by the user
     rooms:         Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>,
     /// Room selected on the side bar with the list of chats.
@@ -54,6 +62,23 @@ impl RoomList {
         frame.render_widget(paragraph, rect);
     }
 
+    /// Draw the loading message until the rooms are fetched from the mautrix
+    fn draw_loading(frame: &mut Frame<'_>, area: Rect) {
+        let text = "Loading...";
+        let rect = grid_center(
+            Constraint::Length(saturating_cast(text.len())),
+            Constraint::Length(1),
+            area,
+        );
+
+        frame.render_widget(Text::from("Loading..."), rect);
+    }
+
+    /// Marks the loading as ended
+    pub const fn end_loading(&mut self) {
+        self.is_loading = false;
+    }
+
     /// Instructions to be displayed when no rooms are accessible from the user.
     fn instructions() -> Instructions<'static> {
         InstructionsBuilder::default()
@@ -69,7 +94,7 @@ impl RoomList {
     ///
     /// The rooms and their content are loaded by the chat page in the backend.
     pub const fn new(rooms: Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>) -> Self {
-        Self { rooms, selected_room: 0 }
+        Self { rooms, selected_room: 0, is_loading: true }
     }
 }
 
@@ -85,7 +110,11 @@ impl Component for RoomList {
         let unknown = String::from("<unknown>");
 
         if safe_unlock(&self.rooms).is_empty() {
-            Self::draw_empty(frame, area);
+            if self.is_loading {
+                Self::draw_loading(frame, area);
+            } else {
+                Self::draw_empty(frame, area);
+            }
         }
 
         let name_list = safe_unlock(&self.rooms)

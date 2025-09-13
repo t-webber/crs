@@ -162,14 +162,13 @@ impl User {
     ///
     /// This function will never panic or return an error, it will just run
     /// indefinetly until a room is visible from the [`User`].
-    #[must_use]
-    pub async fn wait_until_visible_room(&self) -> DisplayRoom {
+    pub fn wait_for_visible_room(&self) {
         let mut backoff = 1;
         loop {
             thread::sleep(Duration::from_secs(backoff));
             backoff <<= 1_i32;
-            if let Some(room) = self.client.rooms().into_iter().next() {
-                return DisplayRoom::new(room).await;
+            if self.client.rooms().into_iter().next().is_some() {
+                return;
             }
         }
     }

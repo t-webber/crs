@@ -6,7 +6,7 @@ mod login;
 extern crate alloc;
 use alloc::sync::Arc;
 
-use backend::user::User;
+use crs_backend::user::User;
 use ratatui::Frame;
 use ratatui::crossterm::event::Event;
 use ratatui::layout::Rect;
