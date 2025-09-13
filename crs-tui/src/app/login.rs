@@ -218,8 +218,8 @@ impl Component for LoginPage {
                     || self.username.is_empty()
                     || self.password.is_empty()
                 {
-                    self.error =
-                        "Found empty field, but all are required".into();
+                    "Found empty field, but all are required"
+                        .clone_into(&mut self.error);
                     return None;
                 }
                 let credentials = Credentials::from(take(self));

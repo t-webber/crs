@@ -38,14 +38,20 @@ impl Component for InvitationPopup {
         let accept = InstructionsBuilder::default()
             .text("Press")
             .key("Enter")
-            .text("to accept and join")
+            .text("to accept and join.")
             .build();
+
+        let button_rect = linear_center(
+            Constraint::Length(accept.width.saturating_add(2)),
+            Direction::Horizontal,
+            layout[1],
+        );
 
         let button = Paragraph::new(accept.line)
             .centered()
             .block(Block::new().borders(Borders::ALL));
 
-        frame.render_widget(button, layout[1]);
+        frame.render_widget(button, button_rect);
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {

@@ -48,7 +48,7 @@ impl<'text> InstructionsBuilder<'text> {
         self.width = self
             .width
             .saturating_add(saturating_cast(key.len()))
-            .saturating_add(2);
+            .saturating_add(4);
         self
     }
 
