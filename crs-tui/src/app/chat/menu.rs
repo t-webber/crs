@@ -16,15 +16,11 @@ use crate::ui::component::Component;
 use crate::ui::widgets::{Instructions, InstructionsBuilder, grid_center};
 use crate::utils::safe_unlock;
 
-/// Message displayed when no rooms are accessible from the user.
-const EMPTY_MSG: &str = "You don't have access to any rooms. Connect a bridge \
-                         or create a new chat.";
-
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
 pub struct RoomList {
     /// Rooms visible by the user
-    rooms:         Arc<Mutex<Vec<Arc<DisplayRoom>>>>,
+    rooms:         Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>,
     /// Room selected on the side bar with the list of chats.
     ///
     /// Press enter to open this room in the chat panel, and use arrows to
@@ -72,7 +68,7 @@ impl RoomList {
     /// Create a new menu list with the same rooms than the chat page.
     ///
     /// The rooms and their content are loaded by the chat page in the backend.
-    pub const fn new(rooms: Arc<Mutex<Vec<Arc<DisplayRoom>>>>) -> Self {
+    pub const fn new(rooms: Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>) -> Self {
         Self { rooms, selected_room: 0 }
     }
 }
@@ -83,7 +79,7 @@ impl Component for RoomList {
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         debug_assert!(
-            area.as_size().width >= 10,
+            area.as_size().width >= 20,
             "menu shouldn't be displayed on small screens"
         );
         let unknown = String::from("<unknown>");
@@ -96,13 +92,15 @@ impl Component for RoomList {
             .iter()
             .enumerate()
             .map(|(idx, room)| {
-                let name = room.as_name().unwrap_or(&unknown).as_str();
-                if idx == self.selected_room {
-                    ListItem::new(format!(">{name}",))
-                        .style(Style::new().fg(Color::Green))
+                let room_locked = safe_unlock(room);
+                let name = room_locked.as_name().unwrap_or(&unknown).as_str();
+                let (text, colour) = if idx == self.selected_room {
+                    (format!(">{name}"), Color::Green)
                 } else {
-                    ListItem::new(format!(" {name}",))
-                }
+                    (format!(" {name}"), Color::Reset)
+                };
+                drop(room_locked);
+                ListItem::new(text).style(Style::new().fg(colour))
             })
             .collect::<Vec<_>>();
 

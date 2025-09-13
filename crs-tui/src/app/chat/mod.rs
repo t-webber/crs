@@ -6,7 +6,9 @@ mod menu;
 extern crate alloc;
 use alloc::sync::Arc;
 use core::convert::Infallible;
+use core::time::Duration;
 use std::sync::Mutex;
+use std::thread;
 
 use backend::room::DisplayRoom;
 use backend::user::User;
@@ -29,7 +31,7 @@ pub struct ChatPage {
     /// Menu with the list of rooms
     menu:         RoomList,
     /// Rooms visible by the user
-    rooms:        Arc<Mutex<Vec<Arc<DisplayRoom>>>>,
+    rooms:        Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>,
     /// User to interact with matrix server
     user:         Arc<User>,
 }
@@ -40,16 +42,36 @@ impl ChatPage {
     /// The rooms and their content will load in the background.
     pub fn new(user: Arc<User>) -> Self {
         let rooms = Arc::new(Mutex::new(vec![]));
-        let rooms_adder = Arc::clone(&rooms);
-        let user_adder = Arc::clone(&user);
-        let _handle = tokio::spawn(async move {
-            let on_room_load = move |room: DisplayRoom| {
-                safe_unlock(&rooms_adder).push(Arc::new(room));
-            };
-            user_adder.load_rooms(on_room_load).await
-        });
         let menu = RoomList::new(Arc::clone(&rooms));
-        Self { rooms, user, menu, conversation: None }
+        let this = Self { rooms, user, menu, conversation: None };
+        this.synchronise_rooms();
+        this
+    }
+
+    /// Synchronise the existing rooms, including name and messages
+    fn synchronise_rooms(&self) {
+        let rooms = Arc::clone(&self.rooms);
+        let user = Arc::clone(&self.user);
+        let _handle = tokio::spawn(async move {
+            drop(user.wait_until_visible_room().await);
+            loop {
+                let local_rooms = Arc::clone(&rooms);
+                let on_room_load = move |new_room: DisplayRoom| {
+                    let new_room_id = new_room.id();
+                    if let Some(old_room) = safe_unlock(&local_rooms)
+                        .iter_mut()
+                        .find(|room| safe_unlock(room).id() == new_room_id)
+                    {
+                        safe_unlock(old_room).update_from(new_room);
+                    } else {
+                        safe_unlock(&local_rooms)
+                            .push(Arc::new(Mutex::new(new_room)));
+                    }
+                };
+                user.load_rooms(on_room_load).await.unwrap();
+                thread::sleep(Duration::from_secs(1));
+            }
+        });
     }
 }
 

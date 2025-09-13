@@ -2,8 +2,8 @@
 //! to interface it simply.
 
 use matrix_sdk::room::MessagesOptions;
-use matrix_sdk::ruma::UInt;
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
+use matrix_sdk::ruma::{OwnedRoomId, UInt};
 use matrix_sdk::{Room, StoreError};
 use serde::{Deserialize, Serialize};
 
@@ -17,6 +17,8 @@ pub struct DisplayRoom {
     name:     Result<String, StoreError>,
     /// Inner associated matrix room
     room:     Room,
+    /// Room unique identifier
+    room_id:  OwnedRoomId,
 }
 
 impl DisplayRoom {
@@ -38,6 +40,12 @@ impl DisplayRoom {
     /// [1]: <https://matrix.org/docs/spec/client_server/latest#calculating-the-display-name-for-a-room>
     pub const fn as_name(&self) -> Result<&String, &StoreError> {
         self.name.as_ref()
+    }
+
+    /// Returns the room id
+    #[must_use]
+    pub const fn id(&self) -> &OwnedRoomId {
+        &self.room_id
     }
 
     /// Create a new display room from a [`Room`]
@@ -63,7 +71,8 @@ impl DisplayRoom {
                 })
                 .collect()
         });
-        Self { messages, name, room }
+        let room_id = room.room_id().to_owned();
+        Self { messages, name, room, room_id }
     }
 
     /// Sends a message in a room
@@ -74,6 +83,12 @@ impl DisplayRoom {
     pub async fn send_plain(&self, msg: &str) -> Result<(), matrix_sdk::Error> {
         self.room.send(RoomMessageEventContent::text_plain(msg)).await?;
         Ok(())
+    }
+
+    /// Updates the content of a room but the contents of another room
+    pub fn update_from(&mut self, other: Self) {
+        self.messages = other.messages;
+        self.name = other.name;
     }
 }
 
