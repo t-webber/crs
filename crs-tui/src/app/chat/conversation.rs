@@ -6,11 +6,13 @@ use alloc::sync::Arc;
 use core::convert::Infallible;
 use std::sync::Mutex;
 
+use color_eyre::owo_colors::OwoColorize;
 use crs_backend::room::DisplayRoom;
 use ratatui::Frame;
 use ratatui::crossterm::event::{Event, KeyCode};
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
+use ratatui::text::Text;
 use ratatui::widgets::{List, ListItem, Paragraph, Wrap};
 
 use crate::ui::component::Component;
@@ -73,13 +75,23 @@ impl Component for Conversation {
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let layout = Layout::new(Direction::Vertical, [
+            Constraint::Length(1),
             Constraint::Fill(1),
             Constraint::Length(Input::HEIGHT_WITHOUT_LABEL),
         ])
         .split(area);
 
-        self.draw_conversation_content(frame, layout[0]);
-        self.message_prompt.draw(frame, layout[1]);
+        let unknown = String::from("unknown");
+        let room = safe_unlock(&self.room);
+        let room_name = room.as_name().unwrap_or(&unknown);
+        let room_name_widget = Text::from(room_name.as_str())
+            .style(Style::new().fg(Color::Yellow))
+            .alignment(Alignment::Center);
+        frame.render_widget(room_name_widget, layout[0]);
+        drop(room);
+
+        self.draw_conversation_content(frame, layout[1]);
+        self.message_prompt.draw(frame, layout[2]);
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
