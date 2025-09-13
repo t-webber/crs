@@ -7,7 +7,7 @@ use std::sync::Mutex;
 
 use crs_backend::room::DisplayRoom;
 use ratatui::Frame;
-use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind};
+use ratatui::crossterm::event::{Event, KeyCode};
 use ratatui::layout::{Alignment, Constraint, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::Text;
@@ -132,12 +132,7 @@ impl Component for RoomList {
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
-        let Event::Key(key_event) = event else {
-            return None;
-        };
-        if key_event.kind != KeyEventKind::Press {
-            return None;
-        }
+        let key_event = event.as_key_press_event()?;
         match key_event.code {
             KeyCode::Up =>
                 self.selected_room = self.selected_room.saturating_sub(1),

@@ -4,7 +4,7 @@ use core::convert::Infallible;
 use core::iter::repeat_n;
 
 use ratatui::Frame;
-use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind};
+use ratatui::crossterm::event::{Event, KeyCode};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::Text;
@@ -132,12 +132,7 @@ impl Component for Input<'_> {
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
-        let Event::Key(key_event) = event else {
-            return None;
-        };
-        if key_event.kind != KeyEventKind::Press {
-            return None;
-        }
+        let key_event = event.as_key_press_event()?;
         match key_event.code {
             KeyCode::Char(ch) => self.value.push(ch),
             KeyCode::Backspace => {

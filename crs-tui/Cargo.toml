@@ -18,7 +18,7 @@ categories = [
 
 [dependencies]
 color-eyre = "0.6.5"
-ratatui = "0.29.0"
+ratatui = "0.30.0-alpha.5"
 crs-backend = { path = "../crs-backend/" }
 tokio = { version = "1.47.1", features = ["full"] }
 dotenv = "0.15.0"

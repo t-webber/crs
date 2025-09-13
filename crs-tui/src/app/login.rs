@@ -4,7 +4,7 @@
 use core::mem::take;
 
 use ratatui::Frame;
-use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind};
+use ratatui::crossterm::event::{Event, KeyCode};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize as _};
 use ratatui::text::{Line, Text};
@@ -209,10 +209,7 @@ impl Component for LoginPage {
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
-        let Event::Key(key_event): Event = event else { return None };
-        if key_event.kind != KeyEventKind::Press {
-            return None;
-        }
+        let key_event = event.as_key_press_event()?;
         match key_event.code {
             KeyCode::Tab => self.focus_field_down(),
             KeyCode::BackTab => self.focus_field_up(),
