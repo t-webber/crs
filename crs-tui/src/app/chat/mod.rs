@@ -20,7 +20,9 @@ use ratatui::widgets::{Paragraph, Wrap};
 use crate::app::chat::conversation::Conversation;
 use crate::app::chat::menu::RoomList;
 use crate::ui::component::Component;
-use crate::ui::widgets::{Instructions, InstructionsBuilder, linear_center};
+use crate::ui::widgets::{
+    Instructions, InstructionsBuilder, fully_centered_content, linear_center
+};
 use crate::utils::safe_unlock;
 
 /// This page renders and gives the user an interface to list the chat and
@@ -105,12 +107,6 @@ impl Component for ChatPage {
 }
 
 /// Displays the message for when no chat is opened.
-#[expect(
-    clippy::integer_division,
-    clippy::integer_division_remainder_used,
-    clippy::arithmetic_side_effects,
-    reason = "want rounded value"
-)]
 pub fn no_conversation(frame: &mut Frame<'_>, area: Rect) {
     let Instructions { line, width } = InstructionsBuilder::default()
         .text(" Use")
@@ -122,14 +118,11 @@ pub fn no_conversation(frame: &mut Frame<'_>, area: Rect) {
         .text("to open it here. ")
         .build();
 
-    let height = (width / area.width).saturating_add(1);
-
-    let center =
-        linear_center(Constraint::Length(height), Direction::Vertical, area);
+    let rect = fully_centered_content(width, area.width, area);
 
     let paragraph = Paragraph::new(line)
         .wrap(Wrap { trim: true })
         .alignment(Alignment::Center);
 
-    frame.render_widget(paragraph, center);
+    frame.render_widget(paragraph, rect);
 }

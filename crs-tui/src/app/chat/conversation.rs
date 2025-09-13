@@ -8,10 +8,10 @@ use std::sync::Mutex;
 
 use crs_backend::room::DisplayRoom;
 use ratatui::Frame;
-use ratatui::layout::Rect;
+use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::Text;
-use ratatui::widgets::{List, ListItem};
+use ratatui::widgets::{List, ListItem, Paragraph, Wrap};
 
 use crate::ui::component::Component;
 use crate::utils::safe_unlock;
@@ -43,8 +43,10 @@ impl Component for Conversation {
             }
             Err(err) => {
                 frame.render_widget(
-                    Text::from(err.to_string())
-                        .style(Style::default().fg(Color::Red)),
+                    Paragraph::new(Text::from(err.to_string()))
+                        .style(Style::default().fg(Color::Red))
+                        .wrap(Wrap { trim: true })
+                        .alignment(Alignment::Center),
                     area,
                 );
             }

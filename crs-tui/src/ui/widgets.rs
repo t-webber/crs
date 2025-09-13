@@ -102,3 +102,20 @@ pub fn linear_center(
         ])
         .split(area)[1]
 }
+
+/// Center text both vertically and horizontally, adapting the constraints to
+/// the length of the text and the width of the area.
+#[expect(clippy::arithmetic_side_effects, reason = "round value")]
+pub fn fully_centered_content(
+    content_width: u16,
+    area_width: u16,
+    area: Rect,
+) -> Rect {
+    let height = (content_width.saturating_div(area_width)).saturating_add(1);
+
+    grid_center(
+        Constraint::Length(area_width),
+        Constraint::Length(height),
+        area,
+    )
+}

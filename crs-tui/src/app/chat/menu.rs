@@ -15,7 +15,7 @@ use ratatui::widgets::{Block, List, ListItem, Paragraph, Wrap};
 
 use crate::ui::component::Component;
 use crate::ui::widgets::{
-    Instructions, InstructionsBuilder, grid_center, saturating_cast
+    Instructions, InstructionsBuilder, fully_centered_content, grid_center, saturating_cast
 };
 use crate::utils::safe_unlock;
 
@@ -38,33 +38,24 @@ pub struct RoomList {
 
 impl RoomList {
     /// Draw the room list for when no rooms are available.
-    #[expect(
-        clippy::integer_division,
-        clippy::integer_division_remainder_used,
-        clippy::arithmetic_side_effects,
-        reason = "want rounded value"
-    )]
+    #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw_empty(frame: &mut Frame<'_>, area: Rect) {
-        let rect_width = area.width - 4;
+        let instructions = Self::instructions();
 
-        let Instructions { line, width } = Self::instructions();
-        let height = (width / rect_width).saturating_add(1);
+        let rect =
+            fully_centered_content(instructions.width, area.width - 4, area);
 
-        let paragraph = Paragraph::new(line)
+        let paragraph = Paragraph::new(instructions.line)
             .wrap(Wrap { trim: true })
             .alignment(Alignment::Center);
 
-        let rect = grid_center(
-            Constraint::Length(rect_width),
-            Constraint::Length(height),
-            area,
-        );
         frame.render_widget(paragraph, rect);
     }
 
     /// Draw the loading message until the rooms are fetched from the mautrix
     fn draw_loading(frame: &mut Frame<'_>, area: Rect) {
         let text = "Loading...";
+
         let rect = grid_center(
             Constraint::Length(saturating_cast(text.len())),
             Constraint::Length(1),
