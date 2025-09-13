@@ -47,16 +47,18 @@ impl<'label> Input<'label> {
 
     /// Draw the input box with the value inside
     fn draw_value(&self, frame: &mut Frame<'_>, area: Rect) {
-        let value = Paragraph::new(if self.is_hidden {
+        let text = if self.is_hidden {
             let hidden_value: String =
                 repeat_n('*', self.value.len()).collect();
             Text::from(hidden_value)
         } else {
             Text::from(self.value.as_str())
-        })
-        .block(Block::bordered().border_style(self.border_style()));
+        };
 
-        frame.render_widget(value, area);
+        let paragraph = Paragraph::new(text)
+            .block(Block::bordered().border_style(self.border_style()));
+
+        frame.render_widget(paragraph, area);
     }
 
     /// Returns the value of the input
@@ -83,6 +85,11 @@ impl<'label> Input<'label> {
     /// Focus the input and capture the keys
     pub const fn set_active(&mut self, is_active: bool) {
         self.is_active = is_active;
+    }
+
+    /// Focus the input and capture the keys
+    pub const fn set_error(&mut self, has_error: bool) {
+        self.has_error = has_error;
     }
 
     /// Sets the inner value of the input

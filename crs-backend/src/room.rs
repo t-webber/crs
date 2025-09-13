@@ -6,7 +6,7 @@ use std::sync::Arc;
 use matrix_sdk::room::MessagesOptions;
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
 use matrix_sdk::ruma::{OwnedRoomId, UInt};
-use matrix_sdk::{Room, StoreError};
+use matrix_sdk::{Room, RoomState, StoreError};
 use serde::{Deserialize, Serialize};
 
 /// Interface to display a room
@@ -42,6 +42,12 @@ impl DisplayRoom {
     /// [1]: <https://matrix.org/docs/spec/client_server/latest#calculating-the-display-name-for-a-room>
     pub const fn as_name(&self) -> Result<&String, &StoreError> {
         self.name.as_ref()
+    }
+
+    /// Indicates whether an invitation is pending for this room.
+    #[must_use]
+    pub fn has_invitation(&self) -> bool {
+        matches!(self.room.state(), RoomState::Invited)
     }
 
     /// Returns the room id
@@ -105,9 +111,20 @@ impl Message {
     }
 }
 
+/// Room wrapper to only keep the room wrapper.
 pub struct RoomWrap(Room);
 
 impl RoomWrap {
+    /// Accepts the invitation received to join the room.
+    ///
+    /// # Errors
+    ///
+    /// If the room isn't in the "Invited" or "Left" state, or for regular
+    /// connection errors.
+    pub async fn accept_invitation(&self) -> Result<(), matrix_sdk::Error> {
+        self.0.join().await
+    }
+
     /// Sends a message in a room
     ///
     /// # Errors
