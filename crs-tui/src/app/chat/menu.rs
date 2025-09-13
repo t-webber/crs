@@ -37,7 +37,7 @@ pub struct RoomList {
 }
 
 impl RoomList {
-    /// Draw the room list for when no rooms are available.
+    /// Draws the room list for when no rooms are available.
     #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw_empty(frame: &mut Frame<'_>, area: Rect) {
         let instructions = Self::instructions();
@@ -52,7 +52,7 @@ impl RoomList {
         frame.render_widget(paragraph, rect);
     }
 
-    /// Draw the loading message until the rooms are fetched from the mautrix
+    /// Draws the loading message until the rooms are fetched from the mautrix
     fn draw_loading(frame: &mut Frame<'_>, area: Rect) {
         let text = "Loading...";
 
@@ -65,9 +65,69 @@ impl RoomList {
         frame.render_widget(Text::from("Loading..."), rect);
     }
 
+    /// Draws the list of rooms to select which room to open in the conversation
+    /// part of the window.
+    fn draw_room_list(&self, frame: &mut Frame<'_>, area: Rect) {
+        let (start, current_index, stop) = self.get_section_delimitations(area);
+
+        let unknown = String::from("<unknown>");
+        let name_list = safe_unlock(&self.rooms)[start..stop]
+            .iter()
+            .enumerate()
+            .map(|(idx, room)| {
+                let room_locked = safe_unlock(room);
+                let name = room_locked.as_name().unwrap_or(&unknown).as_str();
+                let (text, colour) = if idx == current_index {
+                    (format!(">{name}"), Color::Green)
+                } else {
+                    (format!(" {name}"), Color::Reset)
+                };
+                drop(room_locked);
+                ListItem::new(text).style(Style::new().fg(colour))
+            })
+            .collect::<Vec<_>>();
+
+        let list = List::new(name_list).block(
+            Block::bordered().border_style(Style::default().fg(Color::Gray)),
+        );
+
+        frame.render_widget(list, area);
+    }
+
     /// Marks the loading as ended
     pub const fn end_loading(&mut self) {
         self.is_loading = false;
+    }
+
+    /// Returns the indices to slice the rooms displayed in the area
+    ///
+    /// # Returns
+    ///
+    /// A tuple with (start, current, end).
+    ///
+    /// - start: Index of the first room to display
+    /// - current: relative index within the displayed slice of the currently
+    ///   selected room
+    /// - end: Index to stop the slice
+    #[expect(clippy::arithmetic_side_effects, reason = "checked")]
+    fn get_section_delimitations(&self, area: Rect) -> (usize, usize, usize) {
+        debug_assert!(area.height >= 20, "minimum height");
+        let nb_rooms = safe_unlock(&self.rooms).len();
+        let current_index = self.selected_room;
+
+        let nb_rooms_displayed = usize::from(area.height - 2);
+
+        let limit = nb_rooms_displayed >> 1_u32;
+
+        let (start, stop) = if current_index <= limit {
+            (0, nb_rooms_displayed)
+        } else if current_index >= nb_rooms - limit {
+            (nb_rooms - nb_rooms_displayed, nb_rooms)
+        } else {
+            (current_index - limit, current_index + limit)
+        };
+
+        (start, current_index - start, stop)
     }
 
     /// Instructions to be displayed when no rooms are accessible from the user.
@@ -98,7 +158,6 @@ impl Component for RoomList {
             area.as_size().width >= 20,
             "menu shouldn't be displayed on small screens"
         );
-        let unknown = String::from("<unknown>");
 
         if safe_unlock(&self.rooms).is_empty() {
             if self.is_loading {
@@ -106,29 +165,9 @@ impl Component for RoomList {
             } else {
                 Self::draw_empty(frame, area);
             }
+        } else {
+            self.draw_room_list(frame, area);
         }
-
-        let name_list = safe_unlock(&self.rooms)
-            .iter()
-            .enumerate()
-            .map(|(idx, room)| {
-                let room_locked = safe_unlock(room);
-                let name = room_locked.as_name().unwrap_or(&unknown).as_str();
-                let (text, colour) = if idx == self.selected_room {
-                    (format!(">{name}"), Color::Green)
-                } else {
-                    (format!(" {name}"), Color::Reset)
-                };
-                drop(room_locked);
-                ListItem::new(text).style(Style::new().fg(colour))
-            })
-            .collect::<Vec<_>>();
-
-        let list = List::new(name_list).block(
-            Block::bordered().border_style(Style::default().fg(Color::Gray)),
-        );
-
-        frame.render_widget(list, area);
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
@@ -137,8 +176,9 @@ impl Component for RoomList {
             KeyCode::Up =>
                 self.selected_room = self.selected_room.saturating_sub(1),
             KeyCode::Down => {
+                let len = safe_unlock(&self.rooms).len();
                 let new_index = self.selected_room.saturating_add(1);
-                if new_index < safe_unlock(&self.rooms).len() {
+                if new_index < len {
                     self.selected_room = new_index;
                 }
             }

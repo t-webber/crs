@@ -11,11 +11,11 @@ use ratatui::Frame;
 use ratatui::crossterm::event::Event;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
-use ratatui::text::Text;
 use ratatui::widgets::{List, ListItem, Paragraph, Wrap};
 
 use crate::ui::component::Component;
 use crate::ui::input::Input;
+use crate::ui::widgets::{fully_centered_content, saturating_cast};
 use crate::utils::safe_unlock;
 
 /// Conversation panel, with the all the messages and the input to send messages
@@ -28,7 +28,9 @@ pub struct Conversation {
 
 impl Conversation {
     /// Draw the contents of the conversation
+    #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw_conversation_content(&self, frame: &mut Frame<'_>, area: Rect) {
+        debug_assert!(area.width >= 20, "not wide enough");
         match safe_unlock(&self.room).as_messages() {
             Ok(messages_bodies) => {
                 let list = messages_bodies
@@ -37,13 +39,17 @@ impl Conversation {
                 frame.render_widget(List::new(list), area);
             }
             Err(err) => {
-                frame.render_widget(
-                    Paragraph::new(Text::from(err.to_string()))
-                        .style(Style::new().fg(Color::Red))
-                        .wrap(Wrap { trim: true })
-                        .alignment(Alignment::Center),
-                    area,
-                );
+                let err_msg = err.to_string();
+                let err_len = saturating_cast(err_msg.len());
+                let rect =
+                    fully_centered_content(err_len, area.width - 4, area);
+
+                let err_widget = Paragraph::new(err_msg)
+                    .style(Style::new().fg(Color::Red))
+                    .wrap(Wrap { trim: true })
+                    .alignment(Alignment::Center);
+
+                frame.render_widget(err_widget, rect);
             }
         }
     }
@@ -60,11 +66,6 @@ impl Conversation {
             this.message_prompt.set_active(false);
         }
         this
-    }
-
-    /// Returns the room selected for the current conversation
-    pub fn as_room(&self) -> &Arc<Mutex<DisplayRoom>> {
-        &self.room
     }
 }
 

@@ -31,9 +31,14 @@
     clippy::missing_inline_in_public_items,
     clippy::single_call_fn,
     clippy::missing_trait_methods,
+    clippy::else_if_without_else,
     reason = "bad lint"
 )]
-#![allow(clippy::mod_module_files, reason = "chosen style")]
+#![allow(
+    clippy::mod_module_files,
+    clippy::separated_literal_suffix,
+    reason = "chosen style"
+)]
 #![allow(
     dead_code,
     clippy::pub_use,
