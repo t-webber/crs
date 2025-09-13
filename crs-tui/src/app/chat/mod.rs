@@ -20,9 +20,7 @@ use ratatui::widgets::{Paragraph, Wrap};
 use crate::app::chat::conversation::Conversation;
 use crate::app::chat::menu::RoomList;
 use crate::ui::component::Component;
-use crate::ui::widgets::{
-    Instructions, InstructionsBuilder, fully_centered_content, linear_center
-};
+use crate::ui::widgets::{InstructionsBuilder, fully_centered_content};
 use crate::utils::safe_unlock;
 
 /// This page renders and gives the user an interface to list the chat and
@@ -98,17 +96,23 @@ impl Component for ChatPage {
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
-        let index = self.menu.on_event(event).await?;
-        self.conversation = Some(Conversation::new(Arc::clone(
-            &safe_unlock(&self.rooms)[index],
-        )));
+        match self.menu.on_event(event.clone()).await {
+            Some(index) => {
+                let new_room = Arc::clone(&safe_unlock(&self.rooms)[index]);
+                self.conversation = Some(Conversation::new(new_room));
+            }
+            None =>
+                if let Some(conversation) = &mut self.conversation {
+                    conversation.on_event(event).await;
+                },
+        }
         None
     }
 }
 
 /// Displays the message for when no chat is opened.
 pub fn no_conversation(frame: &mut Frame<'_>, area: Rect) {
-    let Instructions { line, width } = InstructionsBuilder::default()
+    let instructions = InstructionsBuilder::default()
         .text(" Use")
         .key("Up")
         .text("and")
@@ -118,9 +122,9 @@ pub fn no_conversation(frame: &mut Frame<'_>, area: Rect) {
         .text("to open it here. ")
         .build();
 
-    let rect = fully_centered_content(width, area.width, area);
+    let rect = fully_centered_content(instructions.width, area.width, area);
 
-    let paragraph = Paragraph::new(line)
+    let paragraph = Paragraph::new(instructions.line)
         .wrap(Wrap { trim: true })
         .alignment(Alignment::Center);
 

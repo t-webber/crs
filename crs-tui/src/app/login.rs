@@ -15,6 +15,21 @@ use crate::ui::component::Component;
 use crate::ui::input::Input;
 use crate::ui::widgets::{Instructions, InstructionsBuilder, grid_center};
 
+/// Height reserved for the error message
+const ERROR_HEIGHT: u16 = 4;
+
+/// Height needed to display a border around the popup
+const BORDER_HEIGHT: u16 = 2;
+
+/// Vertical separation size between each input of the popup
+const INPUT_SEPARATION_HEIGHT: u16 = 1;
+
+/// Full height to reserve to display the popup
+const POPUP_HEIGHT: u16 = 3 * Input::HEIGHT_WITH_LABEL
+    + 4 * INPUT_SEPARATION_HEIGHT
+    + ERROR_HEIGHT
+    + BORDER_HEIGHT;
+
 /// State differentiating the different inputs on the login page.
 ///
 /// Defaults to [`Self::Username`]
@@ -40,11 +55,11 @@ pub struct LoginPage {
     /// Current login error displayed
     error:      String,
     /// Current text  held by the input for the homeserver url
-    homeserver: Input,
+    homeserver: Input<'static>,
     /// Current text  held by the input for the password
-    password:   Input,
+    password:   Input<'static>,
     /// Current text  held by the input for the username
-    username:   Input,
+    username:   Input<'static>,
 }
 
 impl LoginPage {
@@ -140,29 +155,32 @@ impl LoginPage {
     /// Fill the form with the current values
     #[expect(clippy::indexing_slicing, reason = "len = 3")]
     fn render_form(&self, frame: &mut Frame<'_>, area: Rect) {
-        let input_height = Input::HEIGHT;
+        let input_height = Input::HEIGHT_WITH_LABEL;
 
         let form = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
+                Constraint::Length(INPUT_SEPARATION_HEIGHT),
                 Constraint::Length(input_height),
+                Constraint::Length(INPUT_SEPARATION_HEIGHT),
                 Constraint::Length(input_height),
+                Constraint::Length(INPUT_SEPARATION_HEIGHT),
                 Constraint::Length(input_height),
-                Constraint::Length(1),
-                Constraint::Length(4),
+                Constraint::Length(INPUT_SEPARATION_HEIGHT),
+                Constraint::Length(ERROR_HEIGHT),
             ])
             .margin(2)
             .split(area);
 
-        self.homeserver.draw(frame, form[0]);
-        self.username.draw(frame, form[1]);
-        self.password.draw(frame, form[2]);
+        self.homeserver.draw(frame, form[1]);
+        self.username.draw(frame, form[3]);
+        self.password.draw(frame, form[5]);
 
         let error = Paragraph::new(self.error.as_str())
             .wrap(Wrap { trim: true })
             .style(Style::new().fg(Color::Red));
 
-        frame.render_widget(error, form[4]);
+        frame.render_widget(error, form[7]);
     }
 }
 
@@ -175,9 +193,10 @@ impl Component for LoginPage {
         let popup_border = Self::popup_border(instructions.line);
 
         let minimum_width = instructions.width.saturating_add(2);
+
         let popup_area = grid_center(
             Constraint::Min(minimum_width),
-            Constraint::Length(3 * Input::HEIGHT + 1 + 4 + 2),
+            Constraint::Length(POPUP_HEIGHT),
             area,
         );
 
@@ -244,9 +263,9 @@ impl From<LoginPage> for Credentials<String> {
 impl Default for LoginPage {
     fn default() -> Self {
         Self {
-            homeserver: Input::new("Homeserver".to_owned(), true, false),
-            username:   Input::new("Username".to_owned(), false, false),
-            password:   Input::new("Password".to_owned(), false, true),
+            homeserver: Input::default().with_label("Homeserver").with_active(),
+            username:   Input::default().with_label("Username"),
+            password:   Input::default().with_label("Password").with_hidden(),
             current:    CurrentInput::default(),
             error:      String::new(),
         }
