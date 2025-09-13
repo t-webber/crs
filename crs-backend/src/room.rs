@@ -1,6 +1,8 @@
 //! Interface to store the useful data of a room (messages, name, handle, etc.)
 //! to interface it simply.
 
+use std::sync::Arc;
+
 use matrix_sdk::room::MessagesOptions;
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
 use matrix_sdk::ruma::{OwnedRoomId, UInt};
@@ -48,10 +50,16 @@ impl DisplayRoom {
         &self.room_id
     }
 
+    /// Clones and returns the inner room
+    #[must_use]
+    pub fn into_room(&self) -> RoomWrap {
+        RoomWrap(self.room.clone())
+    }
+
     /// Create a new display room from a [`Room`]
     pub async fn new(room: Room) -> Self {
         let name = room.display_name().await.map(|name| name.to_string());
-        let mut opts = MessagesOptions::backward();
+        let mut opts = MessagesOptions::forward();
         opts.limit = UInt::MAX;
         let messages = room.messages(opts).await.map(|messages| {
             messages
@@ -75,16 +83,6 @@ impl DisplayRoom {
         Self { messages, name, room, room_id }
     }
 
-    /// Sends a message in a room
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when join handle crashes.
-    pub async fn send_plain(&self, msg: &str) -> Result<(), matrix_sdk::Error> {
-        self.room.send(RoomMessageEventContent::text_plain(msg)).await?;
-        Ok(())
-    }
-
     /// Updates the content of a room but the contents of another room
     pub fn update_from(&mut self, other: Self) {
         self.messages = other.messages;
@@ -104,5 +102,19 @@ impl Message {
     #[must_use]
     pub const fn as_body(&self) -> &str {
         self.body.as_str()
+    }
+}
+
+pub struct RoomWrap(Room);
+
+impl RoomWrap {
+    /// Sends a message in a room
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when join handle crashes.
+    pub async fn send_plain(&self, msg: &str) -> Result<(), matrix_sdk::Error> {
+        self.0.send(RoomMessageEventContent::text_plain(msg)).await?;
+        Ok(())
     }
 }

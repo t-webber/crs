@@ -118,7 +118,7 @@ pub fn no_conversation(frame: &mut Frame<'_>, area: Rect) {
         .text("and")
         .key("Down")
         .text("to find the conversation, then")
-        .key("Enter")
+        .key("Right")
         .text("to open it here. ")
         .build();
 

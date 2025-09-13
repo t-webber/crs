@@ -182,7 +182,7 @@ impl Component for RoomList {
                     self.selected_room = new_index;
                 }
             }
-            KeyCode::Enter => return Some(self.selected_room),
+            KeyCode::Right => return Some(self.selected_room),
             _ => (),
         }
         None

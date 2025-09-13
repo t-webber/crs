@@ -2,6 +2,7 @@
 
 use core::convert::Infallible;
 use core::iter::repeat_n;
+use core::mem::take;
 
 use ratatui::Frame;
 use ratatui::crossterm::event::{Event, KeyCode};
@@ -87,6 +88,13 @@ impl<'label> Input<'label> {
     /// Sets the inner value of the input
     pub fn set_value(&mut self, value: String) {
         self.value = value;
+    }
+
+    /// Takes the value of the input and clears it.
+    ///
+    /// This returns the content of the input, and resets its value to empty.
+    pub fn take_value(&mut self) -> String {
+        take(&mut self.value)
     }
 
     /// Mark the input as active

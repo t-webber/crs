@@ -8,7 +8,7 @@ use std::sync::Mutex;
 
 use crs_backend::room::DisplayRoom;
 use ratatui::Frame;
-use ratatui::crossterm::event::Event;
+use ratatui::crossterm::event::{Event, KeyCode};
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{List, ListItem, Paragraph, Wrap};
@@ -62,9 +62,7 @@ impl Conversation {
     /// Open a new conversation for the given room
     pub fn new(room: Arc<Mutex<DisplayRoom>>) -> Self {
         let mut this = Self { room, message_prompt: Input::new() };
-        if this.has_errors() {
-            this.message_prompt.set_active(false);
-        }
+        this.message_prompt.set_active(!this.has_errors());
         this
     }
 }
@@ -85,6 +83,20 @@ impl Component for Conversation {
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
-        self.message_prompt.on_event(event).await
+        let key_event = event.as_key_press_event()?;
+        if key_event.code == KeyCode::Enter {
+            let message = self.message_prompt.take_value();
+            let room = safe_unlock(&self.room).into_room();
+            room.send_plain(&message).await.unwrap();
+            return None;
+        }
+
+        if self.has_errors() {
+            self.message_prompt.set_active(false);
+            None
+        } else {
+            self.message_prompt.set_active(true);
+            self.message_prompt.on_event(event).await
+        }
     }
 }
