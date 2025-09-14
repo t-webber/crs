@@ -60,8 +60,13 @@ impl Component for Discussion {
         let room = safe_unlock(&self.room);
         let messages = room.as_messages().unwrap();
 
-        let list =
-            messages.iter().map(|message| ListItem::new(message.as_body()));
+        let list = messages.iter().map(|message| {
+            ListItem::new(format!(
+                "{}: {}",
+                message.as_sender(),
+                message.as_body()
+            ))
+        });
 
         frame.render_widget(List::new(list), layout[0]);
         drop(room);

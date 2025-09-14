@@ -140,9 +140,9 @@ impl RoomList {
         let limit = nb_rooms_displayed >> 1_u32;
 
         let (start, stop) = if current_index <= limit {
-            (0, nb_rooms_displayed)
+            (0, nb_rooms_displayed.min(nb_rooms))
         } else if current_index >= nb_rooms - limit {
-            (nb_rooms - nb_rooms_displayed, nb_rooms)
+            (nb_rooms.saturating_sub(nb_rooms_displayed), nb_rooms)
         } else {
             (current_index - limit, current_index + limit)
         };
