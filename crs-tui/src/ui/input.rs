@@ -32,7 +32,7 @@ impl<'label> Input<'label> {
     /// Number of lines to ask to render an input
     pub const HEIGHT_WITHOUT_LABEL: u16 = 3;
     /// Number of lines to ask to render an input
-    pub const HEIGHT_WITH_LABEL: u16 = 5;
+    pub const HEIGHT_WITH_LABEL: u16 = 4;
 
     /// Border colour
     fn border_style(&self) -> Style {

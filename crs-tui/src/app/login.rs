@@ -5,9 +5,9 @@ use core::mem::take;
 
 use ratatui::Frame;
 use ratatui::crossterm::event::{Event, KeyCode};
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::layout::{Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Style, Stylize as _};
-use ratatui::text::{Line, Text};
+use ratatui::text::Line;
 use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use crate::credentials::Credentials;
@@ -26,7 +26,7 @@ const INPUT_SEPARATION_HEIGHT: u16 = 1;
 
 /// Full height to reserve to display the popup
 const POPUP_HEIGHT: u16 = 3 * Input::HEIGHT_WITH_LABEL
-    + 4 * INPUT_SEPARATION_HEIGHT
+    + 3 * INPUT_SEPARATION_HEIGHT
     + ERROR_HEIGHT
     + BORDER_HEIGHT;
 
@@ -119,9 +119,8 @@ impl LoginPage {
         InstructionsBuilder::default()
             .text(" Switch input")
             .key("Tab")
-            .text(" Submit ")
+            .text("Submit")
             .key("Enter")
-            .text(" ")
             .build()
     }
 
@@ -157,6 +156,8 @@ impl LoginPage {
     fn render_form(&self, frame: &mut Frame<'_>, area: Rect) {
         let input_height = Input::HEIGHT_WITH_LABEL;
 
+        let margin = Margin::new(2, 1);
+
         let form = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -166,21 +167,27 @@ impl LoginPage {
                 Constraint::Length(input_height),
                 Constraint::Length(INPUT_SEPARATION_HEIGHT),
                 Constraint::Length(input_height),
-                Constraint::Length(INPUT_SEPARATION_HEIGHT),
                 Constraint::Length(ERROR_HEIGHT),
             ])
-            .margin(2)
-            .split(area);
+            .split(area.inner(margin));
 
         self.homeserver.draw(frame, form[1]);
         self.username.draw(frame, form[3]);
         self.password.draw(frame, form[5]);
 
-        let error = Paragraph::new(self.error.as_str())
-            .wrap(Wrap { trim: true })
-            .style(Style::new().fg(Color::Red));
+        if matches!(self.current, CurrentInput::Submitting) {
+            let submitting_text =
+                Paragraph::new("Submitting...").fg(Color::Green).centered();
 
-        frame.render_widget(error, form[7]);
+            frame.render_widget(submitting_text, form[6]);
+        } else {
+            let error = Paragraph::new(self.error.as_str())
+                .wrap(Wrap { trim: true })
+                .style(Style::new().fg(Color::Red))
+                .centered();
+
+            frame.render_widget(error, form[6]);
+        }
     }
 }
 
@@ -190,7 +197,6 @@ impl Component for LoginPage {
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let instructions = Self::instructions();
-        let popup_border = Self::popup_border(instructions.line);
 
         let minimum_width = instructions.width.saturating_add(2);
 
@@ -200,12 +206,10 @@ impl Component for LoginPage {
             area,
         );
 
+        let popup_border = Self::popup_border(instructions.line);
+        frame.render_widget(popup_border, popup_area);
+
         self.render_form(frame, popup_area);
-
-        let popup_dummy_content = Paragraph::new(Text::from(""));
-        let popup_dummy = popup_dummy_content.centered().block(popup_border);
-
-        frame.render_widget(popup_dummy, popup_area);
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
