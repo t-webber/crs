@@ -1,0 +1,86 @@
+#![allow(clippy::missing_docs_in_private_items, reason = "cf json reference")]
+
+use matrix_sdk::Room;
+use matrix_sdk::room::MessagesOptions;
+use matrix_sdk::ruma::exports::serde::{Deserialize, Serialize};
+use matrix_sdk::ruma::{UInt, UserId};
+
+#[derive(Serialize, Deserialize)]
+struct Content {
+    body: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Message {
+    content: Content,
+    sender:  String,
+}
+
+/// Message from a room
+///
+/// A message can represent anything: a rule, a reaction, an action (e.g.
+/// someone joined), etc.
+pub struct DisplayMessage {
+    body:   String,
+    sender: String,
+}
+
+impl DisplayMessage {
+    /// Returns the body of the message
+    #[must_use]
+    pub fn as_body(&self) -> &str {
+        &self.body
+    }
+
+    /// Returns the sender of the message
+    #[must_use]
+    pub fn as_sender(&self) -> &str {
+        &self.sender
+    }
+
+    async fn try_from(
+        message: Message,
+        room: &Room,
+    ) -> Result<Option<Self>, matrix_sdk::Error> {
+        if let Some(body) = message.content.body
+            && let user_id = UserId::parse(message.sender)?
+            && let Some(member) = room.get_member(&user_id).await?
+            && let Some(name) = member.display_name()
+        {
+            Ok(Some(Self { body, sender: name.to_owned() }))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+/// Loads and parses the messages of a room
+///
+/// # Errors
+///
+/// For connection errors
+///
+/// # Panics
+///
+/// For serialisation errors
+pub async fn get_room_messages(
+    room: &Room,
+) -> Result<Vec<DisplayMessage>, matrix_sdk::Error> {
+    let mut opts = MessagesOptions::forward();
+    opts.limit = UInt::MAX;
+
+    let room_messages = room.messages(opts).await?.chunk;
+
+    let mut display_messages = Vec::with_capacity(room_messages.len());
+    for room_message in room_messages {
+        let json = room_message.into_raw();
+        let message = json.deserialize_as::<Message>().unwrap();
+        if let Some(display_message) =
+            DisplayMessage::try_from(message, room).await?
+        {
+            display_messages.push(display_message);
+        }
+    }
+
+    Ok(display_messages)
+}

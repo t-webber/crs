@@ -1,18 +1,18 @@
 //! Interface to store the useful data of a room (messages, name, handle, etc.)
 //! to interface it simply.
 
-use matrix_sdk::room::MessagesOptions;
+use matrix_sdk::ruma::OwnedRoomId;
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
-use matrix_sdk::ruma::{OwnedRoomId, UInt};
 use matrix_sdk::{Room, RoomState, StoreError};
-use serde::{Deserialize, Serialize};
+
+use crate::message::{DisplayMessage, get_room_messages};
 
 /// Interface to display a room
 ///
 /// If one of the fields failed to load, the field will contain an error.
 pub struct DisplayRoom {
     /// Matrix room
-    messages: Result<Vec<Message>, matrix_sdk::Error>,
+    messages: Result<Vec<DisplayMessage>, matrix_sdk::Error>,
     /// Room's list of messages
     name:     Result<String, StoreError>,
     /// Inner associated matrix room
@@ -27,7 +27,7 @@ impl DisplayRoom {
     /// # Errors
     ///
     /// Returns an error if the user failed to fetch the messages on the server.
-    pub fn as_messages(&self) -> Result<&[Message], &matrix_sdk::Error> {
+    pub fn as_messages(&self) -> Result<&[DisplayMessage], &matrix_sdk::Error> {
         self.messages.as_ref().map(Vec::as_slice)
     }
 
@@ -85,7 +85,7 @@ impl DisplayRoom {
     /// Updates the content of a room with another name and some other messages.
     fn update_with(
         &mut self,
-        messages: Result<Vec<Message>, matrix_sdk::Error>,
+        messages: Result<Vec<DisplayMessage>, matrix_sdk::Error>,
         name: Result<String, StoreError>,
     ) {
         if messages.is_ok() || self.messages.is_err() {
@@ -94,21 +94,6 @@ impl DisplayRoom {
         if name.is_ok() || self.name.is_err() {
             self.name = name;
         }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-/// Content to extract from a message to display it
-pub struct Message {
-    /// Content of a message
-    body: String,
-}
-
-impl Message {
-    /// Returns the body of the message
-    #[must_use]
-    pub const fn as_body(&self) -> &str {
-        self.body.as_str()
     }
 }
 
@@ -140,32 +125,6 @@ impl RoomWrap {
         self.0.send(RoomMessageEventContent::text_plain(msg)).await?;
         Ok(())
     }
-}
-
-/// Loads the first chunk of messages of a room
-async fn get_room_messages(
-    room: &Room,
-) -> Result<Vec<Message>, matrix_sdk::Error> {
-    let mut opts = MessagesOptions::forward();
-    opts.limit = UInt::MAX;
-
-    room.messages(opts).await.map(|messages| {
-        messages
-            .chunk
-            .into_iter()
-            .filter_map(|msg| {
-                let message = msg.into_raw();
-                if let Ok(Some(msg_type)) = message.get_field::<String>("type")
-                    && msg_type == "m.room.message"
-                    && let Ok(Some(body)) = message.get_field("content")
-                {
-                    Some(body)
-                } else {
-                    None
-                }
-            })
-            .collect()
-    })
 }
 
 /// Computes the name of a room
