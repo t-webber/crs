@@ -70,11 +70,12 @@ impl RoomSearch {
             .key("Tab/backtab")
             .text("Open")
             .key("Enter")
-            .text(" ")
             .build();
 
         frame.render_widget(
-            Block::bordered().title(title).title_bottom(instructions.line),
+            Block::bordered()
+                .title(title)
+                .title_bottom(instructions.line.centered()),
             area,
         );
     }

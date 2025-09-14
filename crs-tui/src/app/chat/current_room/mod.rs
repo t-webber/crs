@@ -235,7 +235,9 @@ impl Component for NoRoomSelected {
             .key("Down")
             .text("to find the conversation, then")
             .key("Right")
-            .text("to open it here. ")
+            .text("to open it here. You can also press")
+            .key("C-k")
+            .text("to search a chat by name.")
             .build();
 
         let rect = fully_centered_content(instructions.width, area.width, area);

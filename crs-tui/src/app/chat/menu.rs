@@ -23,12 +23,9 @@ use crate::utils::safe_unlock;
 static INSTRUCTIONS: LazyLock<Instructions<'static>> = LazyLock::new(|| {
     InstructionsBuilder::default()
         .text(" Select")
-        .key("Arrows")
-        .text("Open")
-        .key("Enter")
+        .key("Up/Down/Right")
         .text("Search")
         .key("C-k")
-        .text(" ")
         .build()
 });
 

@@ -206,7 +206,7 @@ impl Component for LoginPage {
             area,
         );
 
-        let popup_border = Self::popup_border(instructions.line);
+        let popup_border = Self::popup_border(instructions.line.centered());
         frame.render_widget(popup_border, popup_area);
 
         self.render_form(frame, popup_area);
