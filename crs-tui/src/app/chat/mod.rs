@@ -17,7 +17,7 @@ use ratatui::crossterm::event::{Event, KeyModifiers};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 
 use crate::app::chat::current_room::{CurrentRoom, UpdateCurrentRoomPanel};
-use crate::app::chat::menu::RoomList;
+use crate::app::chat::menu::{ROOM_LIST_WIDTH, RoomList};
 use crate::ui::component::Component;
 use crate::utils::safe_unlock;
 
@@ -80,14 +80,25 @@ impl Component for ChatPage {
     type UpdateState = Infallible;
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
-        let layout = Layout::new(Direction::Horizontal, [
-            Constraint::Percentage(30),
-            Constraint::Percentage(70),
-        ])
-        .split(area);
+        let room_list_width = *ROOM_LIST_WIDTH;
+        let constraints: &[Constraint] =
+            if area.width >= room_list_width.saturating_mul(2) {
+                &[Constraint::Length(*ROOM_LIST_WIDTH), Constraint::Fill(1)]
+            } else if area.width > 40 {
+                &[Constraint::Percentage(50), Constraint::Percentage(50)]
+            } else {
+                &[Constraint::Fill(1)]
+            };
 
-        self.menu.draw(frame, layout[0]);
-        self.current_room.draw(frame, layout[1]);
+        let layout =
+            Layout::new(Direction::Horizontal, constraints).split(area);
+
+        if constraints.len() == 2 {
+            self.menu.draw(frame, layout[0]);
+            self.current_room.draw(frame, layout[1]);
+        } else {
+            self.current_room.draw(frame, layout[0]);
+        }
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {

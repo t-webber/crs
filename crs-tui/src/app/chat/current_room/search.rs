@@ -63,7 +63,7 @@ impl RoomSearch {
 
     /// Draws the popup borders with the titles and keymap instructions
     fn draw_popup(frame: &mut Frame<'_>, area: Rect) {
-        let title = "Search room";
+        let title = Line::from(" Search room ").centered();
 
         let instructions = InstructionsBuilder::default()
             .text(" Select")

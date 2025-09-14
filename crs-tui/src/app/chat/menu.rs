@@ -3,12 +3,12 @@
 extern crate alloc;
 use alloc::sync::Arc;
 use core::convert::Infallible;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 
 use crs_backend::room::DisplayRoom;
 use ratatui::Frame;
 use ratatui::crossterm::event::{Event, KeyCode};
-use ratatui::layout::{Alignment, Constraint, Rect};
+use ratatui::layout::{Constraint, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{Block, List, ListItem, Paragraph, Wrap};
@@ -18,6 +18,23 @@ use crate::ui::widgets::{
     Instructions, InstructionsBuilder, fully_centered_content, grid_center, saturating_cast
 };
 use crate::utils::safe_unlock;
+
+/// Instructions to display keymaps
+static INSTRUCTIONS: LazyLock<Instructions<'static>> = LazyLock::new(|| {
+    InstructionsBuilder::default()
+        .text(" Select")
+        .key("Arrows")
+        .text("Open")
+        .key("Enter")
+        .text("Search")
+        .key("C-k")
+        .text(" ")
+        .build()
+});
+
+/// Minimum width to display the room list
+pub static ROOM_LIST_WIDTH: LazyLock<u16> =
+    LazyLock::new(|| INSTRUCTIONS.width.saturating_add(2));
 
 /// This page renders and gives the user an interface to list the chat and
 /// communicate in those chats.
@@ -47,7 +64,7 @@ impl RoomList {
 
         let paragraph = Paragraph::new(instructions.line)
             .wrap(Wrap { trim: true })
-            .alignment(Alignment::Center);
+            .centered();
 
         frame.render_widget(paragraph, rect);
     }
@@ -87,9 +104,15 @@ impl RoomList {
             })
             .collect::<Vec<_>>();
 
-        let list = List::new(name_list).block(
-            Block::bordered().border_style(Style::default().fg(Color::Gray)),
-        );
+        let block = if area.width >= *ROOM_LIST_WIDTH {
+            Block::bordered()
+                .border_style(Style::default().fg(Color::Gray))
+                .title_bottom(INSTRUCTIONS.line.clone())
+        } else {
+            Block::bordered().border_style(Color::Gray)
+        };
+
+        let list = List::new(name_list).block(block);
 
         frame.render_widget(list, area);
     }
