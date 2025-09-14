@@ -10,11 +10,13 @@ use crs_backend::user::User;
 use ratatui::Frame;
 use ratatui::crossterm::event::Event;
 use ratatui::layout::Rect;
+use ratatui::widgets::{Paragraph, Wrap};
 
 use crate::app::chat::ChatPage;
 use crate::app::login::LoginPage;
 use crate::credentials::Credentials;
 use crate::ui::component::Component;
+use crate::ui::widgets::{fully_centered_content, saturating_cast};
 
 /// App containing the user, the UI state
 ///
@@ -52,6 +54,20 @@ impl Component for App {
     type UpdateState = Credentials<String>;
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
+        if area.width <= 20 || area.height <= 10 {
+            let text = "Terminal too small.";
+            let rect = fully_centered_content(
+                saturating_cast(text.len()),
+                area.width,
+                area,
+            );
+            frame.render_widget(
+                Paragraph::new(text).centered().wrap(Wrap { trim: true }),
+                rect,
+            );
+            return;
+        }
+
         match &self.screen {
             Screen::Login(login) => login.draw(frame, area),
             Screen::Chat(chat) => chat.draw(frame, area),

@@ -1,3 +1,5 @@
+//! Loads, parses and handles room messages
+
 #![allow(clippy::missing_docs_in_private_items, reason = "cf json reference")]
 
 use matrix_sdk::Room;

@@ -131,7 +131,6 @@ impl RoomList {
     /// - end: Index to stop the slice
     #[expect(clippy::arithmetic_side_effects, reason = "checked")]
     fn get_section_delimitations(&self, area: Rect) -> (usize, usize, usize) {
-        debug_assert!(area.height >= 20, "minimum height");
         let nb_rooms = safe_unlock(&self.rooms).len();
         let current_index = self.selected_room;
 
