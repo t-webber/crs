@@ -33,6 +33,34 @@ pub struct RoomSearch {
 }
 
 impl RoomSearch {
+    /// Decrement the cursor position after pressing tab with the new
+    /// position, if it is valid.
+    #[expect(clippy::arithmetic_side_effects, reason = "explicitly checked")]
+    const fn cursor_decrement(&mut self) {
+        if self.results.is_empty() {
+            return;
+        }
+        self.cursor = Some(match self.cursor {
+            None | Some(0) => self.results.len() - 1,
+            Some(cursor) => cursor - 1,
+        });
+    }
+
+    /// Increment the cursor position after pressing tab with the new
+    /// position, if it is valid.
+    const fn cursor_increment(&mut self) {
+        if self.results.is_empty() {
+            return;
+        }
+        self.cursor = Some(match self.cursor {
+            None => 0,
+            Some(cursor) => {
+                let incremented = cursor.saturating_add(1);
+                if incremented == self.results.len() { 0 } else { incremented }
+            }
+        });
+    }
+
     /// Draws the popup borders with the titles and keymap instructions
     fn draw_popup(frame: &mut Frame<'_>, area: Rect) {
         let title = "Search room";
@@ -89,28 +117,10 @@ impl RoomSearch {
                 && name.contains(self.input.as_value())
             {
                 self.results.push((index, name.to_owned()));
-                if self.results.len() >= 10 {
+                if self.results.len() >= 20 {
                     return;
                 }
             }
-        }
-    }
-
-    /// Updates the cursor after pressing tab/backtab with the new position, if
-    /// it is valid.
-    const fn increment_cursor(&mut self) {
-        match self.cursor {
-            None => self.cursor = Some(0),
-            Some(cursor) if cursor + 1 == self.results.len() =>
-                self.cursor = Some(0),
-            Some(cursor) => self.cursor = Some(cursor + 1),
-        }
-    }
-
-    const fn decrement_cursor(&mut self) {
-        match self.cursor {
-            None | Some(0) => self.cursor = Some(self.results.len() - 1),
-            Some(cursor) => self.cursor = Some(cursor - 1),
         }
     }
 }
@@ -148,8 +158,8 @@ impl Component for RoomSearch {
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         let key_event = event.as_key_press_event()?;
         match key_event.code {
-            KeyCode::Tab => self.increment_cursor(),
-            KeyCode::BackTab => self.decrement_cursor(),
+            KeyCode::Tab => self.cursor_increment(),
+            KeyCode::BackTab => self.cursor_decrement(),
             KeyCode::Enter =>
                 if let Some(cursor) = self.cursor {
                     let real_index = self.results[cursor].0;
