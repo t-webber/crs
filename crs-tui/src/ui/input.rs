@@ -34,6 +34,11 @@ impl<'label> Input<'label> {
     /// Number of lines to ask to render an input
     pub const HEIGHT_WITH_LABEL: u16 = 4;
 
+    /// Returns the value of the input
+    pub const fn as_value(&self) -> &str {
+        self.value.as_str()
+    }
+
     /// Border colour
     fn border_style(&self) -> Style {
         Style::default().fg(if self.has_error {

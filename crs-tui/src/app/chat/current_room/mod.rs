@@ -2,6 +2,7 @@
 
 mod discussion;
 mod invited;
+mod search;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -21,6 +22,7 @@ use crate::app::chat::current_room::discussion::Discussion;
 use crate::app::chat::current_room::invited::{
     AcceptInvitation, InvitationPopup
 };
+use crate::app::chat::current_room::search::RoomSearch;
 use crate::ui::component::Component;
 use crate::ui::widgets::{
     InstructionsBuilder, fully_centered_content, saturating_cast
@@ -38,6 +40,19 @@ pub struct CurrentRoom {
 }
 
 impl CurrentRoom {
+    /// Accept invitation and display the new status.
+    async fn accept_invitation(&mut self, room: Arc<Mutex<DisplayRoom>>) {
+        let room_handle = safe_unlock(&room).into_room();
+        match room_handle.accept_invitation().await {
+            Err(err) =>
+                self.child = CurrentRoomChild::Error(err.to_string(), room),
+            Ok(new_room) => {
+                *safe_unlock(&room) = new_room;
+                self.select_new_room(room);
+            }
+        }
+    }
+
     /// Draws the error at the center of the chat panel
     #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw_error(err_msg: &str, frame: &mut Frame<'_>, area: Rect) {
@@ -62,10 +77,30 @@ impl CurrentRoom {
 
         frame.render_widget(room_name_widget, area);
     }
+
+    /// Open a new room in the discussion panel
+    fn select_new_room(&mut self, room: Arc<Mutex<DisplayRoom>>) {
+        let room_handle = safe_unlock(&room);
+        self.room_name = room_handle.as_name().map_or_else(
+            |_| String::from("<unknown channel>"),
+            ToOwned::to_owned,
+        );
+        if room_handle.has_invitation() {
+            drop(room_handle);
+            self.child = CurrentRoomChild::Invited(InvitationPopup, room);
+        } else if let Err(err) = room_handle.as_messages() {
+            let err_msg = err.to_string();
+            drop(room_handle);
+            self.child = CurrentRoomChild::Error(err_msg, room);
+        } else if !self.child.room_is(&room_handle) {
+            drop(room_handle);
+            self.child = CurrentRoomChild::Discussion(Discussion::new(room));
+        }
+    }
 }
 
 impl Component for CurrentRoom {
-    type ResponseData = Arc<Mutex<DisplayRoom>>;
+    type ResponseData = UpdateCurrentRoomPanel;
     type UpdateState = Infallible;
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
@@ -79,89 +114,108 @@ impl Component for CurrentRoom {
         self.draw_room_name(frame, layout[0]);
 
         match &self.child {
-            CurrentRoomChild::None => NoRoomSelected.draw(frame, layout[1]),
-            CurrentRoomChild::Invited(child, _) => child.draw(frame, layout[1]),
             CurrentRoomChild::Discussion(child) => child.draw(frame, layout[1]),
-            CurrentRoomChild::Error(err_msg) =>
+            CurrentRoomChild::Error(err_msg, _) =>
                 Self::draw_error(err_msg, frame, layout[1]),
+            CurrentRoomChild::Invited(child, _) => child.draw(frame, layout[1]),
+            CurrentRoomChild::None => NoRoomSelected.draw(frame, layout[1]),
+            CurrentRoomChild::Search(child, _) => child.draw(frame, layout[1]),
         }
     }
 
     #[expect(clippy::unreachable, reason = "just checked monothread data")]
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         match &mut self.child {
-            CurrentRoomChild::Invited(invitation_popup, _) => {
-                let AcceptInvitation = invitation_popup.on_event(event).await?;
-                let CurrentRoomChild::Invited(_, room) = take(&mut self.child)
-                else {
-                    unreachable!()
-                };
-                let room_handle = safe_unlock(&room).into_room();
-                match room_handle.accept_invitation().await {
-                    Err(err) =>
-                        self.child = CurrentRoomChild::Error(err.to_string()),
-                    Ok(new_room) => {
-                        *safe_unlock(&room) = new_room;
-                        self.update(room);
-                    }
-                }
-            }
             CurrentRoomChild::Discussion(discussion) => {
                 discussion.on_event(event).await;
             }
-            CurrentRoomChild::None | CurrentRoomChild::Error(_) => (),
+
+            CurrentRoomChild::Invited(invitation_popup, _) => {
+                let AcceptInvitation = invitation_popup.on_event(event).await?;
+                match take(&mut self.child) {
+                    CurrentRoomChild::Invited(_, room) =>
+                        self.accept_invitation(room).await,
+                    _ => unreachable!(),
+                }
+            }
+
+            CurrentRoomChild::Search(search, _) =>
+                if event.as_key_press_event()?.code.is_caps_lock() {
+                    match take(&mut self.child) {
+                        CurrentRoomChild::Search(_, Some(room)) =>
+                            self.select_new_room(room),
+                        CurrentRoomChild::Search(_, None) => (),
+                        _ => unreachable!(),
+                    }
+                } else if let Some(new_room) = search.on_event(event).await {
+                    self.select_new_room(new_room);
+                },
+
+            CurrentRoomChild::None | CurrentRoomChild::Error(..) => (),
         }
         None
     }
 
     fn update(&mut self, response_data: Self::ResponseData) {
-        let room = safe_unlock(&response_data);
-        self.room_name = room.as_name().map_or_else(
-            |_| String::from("<unknown channel>"),
-            ToOwned::to_owned,
-        );
-        if room.has_invitation() {
-            drop(room);
-            self.child =
-                CurrentRoomChild::Invited(InvitationPopup, response_data);
-        } else if let Err(err) = room.as_messages() {
-            self.child = CurrentRoomChild::Error(err.to_string());
-        } else if !self.child.room_is(&room) {
-            drop(room);
-            self.child =
-                CurrentRoomChild::Discussion(Discussion::new(response_data));
+        match response_data {
+            UpdateCurrentRoomPanel::NewRoom(new_room) =>
+                self.select_new_room(new_room),
+
+            UpdateCurrentRoomPanel::Search(room_list) => {
+                let old_room = self.child.take_room();
+                self.child = CurrentRoomChild::Search(
+                    RoomSearch::new(room_list),
+                    old_room,
+                );
+            }
         }
     }
 }
 
 /// Type of the content displayed in the chat panel
 #[derive(Default)]
-pub enum CurrentRoomChild {
+enum CurrentRoomChild {
     /// A valid room discussion is open and running
     Discussion(Discussion),
     /// An error occurred and needs to be displayed
-    Error(String),
+    Error(String, Arc<Mutex<DisplayRoom>>),
     /// The current roomed hasn't been joined by the user yet, but it has a
     /// pending invitation.
     Invited(InvitationPopup, Arc<Mutex<DisplayRoom>>),
     /// No room was selected yet.
     #[default]
     None,
+    /// Search bar to find and select a room.
+    ///
+    /// This member stores the old room that the user had before entering search
+    /// mode.
+    Search(RoomSearch, Option<Arc<Mutex<DisplayRoom>>>),
 }
 
 impl CurrentRoomChild {
     /// Checks if current state is a discussion, meaning the client can interact
     /// with the room without issues.
-    pub const fn is_discussion(&self) -> bool {
+    const fn is_discussion(&self) -> bool {
         matches!(self, Self::Discussion(_))
     }
 
     /// Checks if a room is open, and if so, that is matches the provided id.
-    pub fn room_is(&self, other: &DisplayRoom) -> bool {
+    fn room_is(&self, other: &DisplayRoom) -> bool {
         if let Self::Discussion(room) = self {
             room.room_is(other)
         } else {
             false
+        }
+    }
+
+    /// Clear the [`CurrentRoomChild`] and return the underlying room if it
+    /// exists.
+    fn take_room(&mut self) -> Option<Arc<Mutex<DisplayRoom>>> {
+        match take(self) {
+            Self::Discussion(discussion) => Some(discussion.room()),
+            Self::Invited(_, room) | Self::Error(_, room) => Some(room),
+            Self::None => None,
+            Self::Search(_, room) => room,
         }
     }
 }
@@ -175,7 +229,7 @@ impl Component for NoRoomSelected {
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let instructions = InstructionsBuilder::default()
-            .text(" Use")
+            .text("  Use")
             .key("Up")
             .text("and")
             .key("Down")
@@ -192,4 +246,12 @@ impl Component for NoRoomSelected {
 
         frame.render_widget(paragraph, rect);
     }
+}
+
+/// Data send to this panel to update it.
+pub enum UpdateCurrentRoomPanel {
+    /// A new room was selected from the room list menu.
+    NewRoom(Arc<Mutex<DisplayRoom>>),
+    /// A search was requested on a set of rooms.
+    Search(Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>),
 }

@@ -13,10 +13,10 @@ use std::thread;
 use crs_backend::room::DisplayRoom;
 use crs_backend::user::User;
 use ratatui::Frame;
-use ratatui::crossterm::event::Event;
+use ratatui::crossterm::event::{Event, KeyModifiers};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 
-use crate::app::chat::current_room::CurrentRoom;
+use crate::app::chat::current_room::{CurrentRoom, UpdateCurrentRoomPanel};
 use crate::app::chat::menu::RoomList;
 use crate::ui::component::Component;
 use crate::utils::safe_unlock;
@@ -91,10 +91,22 @@ impl Component for ChatPage {
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
+        let key_event = event.as_key_press_event()?;
+        if key_event.code.is_char('k')
+            && key_event.modifiers & KeyModifiers::CONTROL
+                == KeyModifiers::CONTROL
+        {
+            let update_data =
+                UpdateCurrentRoomPanel::Search(Arc::clone(&self.rooms));
+            self.current_room.update(update_data);
+            return None;
+        }
+
         match self.menu.on_event(event.clone()).await {
             Some(index) => {
                 let new_room = Arc::clone(&safe_unlock(&self.rooms)[index]);
-                self.current_room.update(new_room);
+                self.current_room
+                    .update(UpdateCurrentRoomPanel::NewRoom(new_room));
             }
             None => {
                 self.current_room.on_event(event).await;

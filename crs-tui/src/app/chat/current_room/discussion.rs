@@ -30,6 +30,11 @@ impl Discussion {
         Self { room, message_prompt: Input::new().with_active() }
     }
 
+    /// Returns the underlying [`RoomDisplay`]
+    pub fn room(self) -> Arc<Mutex<DisplayRoom>> {
+        self.room
+    }
+
     /// Checks if the current room is the same that the provided one, by
     /// checking their ids.
     pub fn room_is(&self, other: &DisplayRoom) -> bool {
