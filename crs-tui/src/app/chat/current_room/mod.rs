@@ -1,5 +1,6 @@
 //! Current display in the chat panel
 
+mod create;
 mod discussion;
 mod invited;
 mod search;
@@ -12,12 +13,14 @@ use std::sync::Mutex;
 
 use crs_backend::room::DisplayRoom;
 use ratatui::Frame;
-use ratatui::crossterm::event::Event;
+use ratatui::crossterm::event::{Event, KeyModifiers};
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Wrap};
 
+use crate::app::chat::current_room::create::CreateRoom;
+pub use crate::app::chat::current_room::create::CreateRoomAction;
 use crate::app::chat::current_room::discussion::Discussion;
 use crate::app::chat::current_room::invited::{
     AcceptInvitation, InvitationPopup
@@ -45,7 +48,8 @@ impl CurrentRoom {
         let room_handle = safe_unlock(&room).into_room();
         match room_handle.accept_invitation().await {
             Err(err) =>
-                self.child = CurrentRoomChild::Error(err.to_string(), room),
+                self.child =
+                    CurrentRoomChild::Error(err.to_string(), Some(room)),
             Ok(new_room) => {
                 *safe_unlock(&room) = new_room;
                 self.select_new_room(room);
@@ -91,7 +95,7 @@ impl CurrentRoom {
         } else if let Err(err) = room_handle.as_messages() {
             let err_msg = err.to_string();
             drop(room_handle);
-            self.child = CurrentRoomChild::Error(err_msg, room);
+            self.child = CurrentRoomChild::Error(err_msg, Some(room));
         } else if !self.child.room_is(&room_handle) {
             drop(room_handle);
             self.child = CurrentRoomChild::Discussion(Discussion::new(room));
@@ -101,7 +105,7 @@ impl CurrentRoom {
 
 impl Component for CurrentRoom {
     type ResponseData = UpdateCurrentRoomPanel;
-    type UpdateState = Infallible;
+    type UpdateState = CreateRoomAction;
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let constraints: &[Constraint] = if self.child.is_discussion() {
@@ -114,6 +118,8 @@ impl Component for CurrentRoom {
         self.draw_room_name(frame, layout[0]);
 
         match &self.child {
+            CurrentRoomChild::CreateRoom(child, _) =>
+                child.draw(frame, layout[1]),
             CurrentRoomChild::Discussion(child) => child.draw(frame, layout[1]),
             CurrentRoomChild::Error(err_msg, _) =>
                 Self::draw_error(err_msg, frame, layout[1]),
@@ -125,7 +131,22 @@ impl Component for CurrentRoom {
 
     #[expect(clippy::unreachable, reason = "just checked monothread data")]
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
+        if let Some(key_event) = event.as_key_press_event()
+            && key_event.code.is_char('n')
+            && key_event.modifiers & KeyModifiers::CONTROL
+                == KeyModifiers::CONTROL
+        {
+            let old_room = self.child.take_room();
+            self.child =
+                CurrentRoomChild::CreateRoom(CreateRoom::new(), old_room);
+            return None;
+        }
+
         match &mut self.child {
+            CurrentRoomChild::CreateRoom(create_room, _) => {
+                return create_room.on_event(event).await;
+            }
+
             CurrentRoomChild::Discussion(discussion) => {
                 discussion.on_event(event).await;
             }
@@ -158,6 +179,11 @@ impl Component for CurrentRoom {
 
     fn update(&mut self, response_data: Self::ResponseData) {
         match response_data {
+            UpdateCurrentRoomPanel::Error(error) => {
+                let old_room = self.child.take_room();
+                self.child = CurrentRoomChild::Error(error, old_room)
+            }
+
             UpdateCurrentRoomPanel::NewRoom(new_room) =>
                 self.select_new_room(new_room),
 
@@ -175,10 +201,12 @@ impl Component for CurrentRoom {
 /// Type of the content displayed in the chat panel
 #[derive(Default)]
 enum CurrentRoomChild {
+    /// A popup to create a new room
+    CreateRoom(CreateRoom, Option<Arc<Mutex<DisplayRoom>>>),
     /// A valid room discussion is open and running
     Discussion(Discussion),
     /// An error occurred and needs to be displayed
-    Error(String, Arc<Mutex<DisplayRoom>>),
+    Error(String, Option<Arc<Mutex<DisplayRoom>>>),
     /// The current roomed hasn't been joined by the user yet, but it has a
     /// pending invitation.
     Invited(InvitationPopup, Arc<Mutex<DisplayRoom>>),
@@ -213,9 +241,11 @@ impl CurrentRoomChild {
     fn take_room(&mut self) -> Option<Arc<Mutex<DisplayRoom>>> {
         match take(self) {
             Self::Discussion(discussion) => Some(discussion.room()),
-            Self::Invited(_, room) | Self::Error(_, room) => Some(room),
+            Self::Invited(_, room) => Some(room),
             Self::None => None,
-            Self::Search(_, room) => room,
+            Self::Error(_, room)
+            | Self::CreateRoom(_, room)
+            | Self::Search(_, room) => room,
         }
     }
 }
@@ -252,6 +282,8 @@ impl Component for NoRoomSelected {
 
 /// Data send to this panel to update it.
 pub enum UpdateCurrentRoomPanel {
+    /// Display an error
+    Error(String),
     /// A new room was selected from the room list menu.
     NewRoom(Arc<Mutex<DisplayRoom>>),
     /// A search was requested on a set of rooms.

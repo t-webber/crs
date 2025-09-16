@@ -1,8 +1,8 @@
 //! Interface to store the useful data of a room (messages, name, handle, etc.)
 //! to interface it simply.
 
-use matrix_sdk::ruma::OwnedRoomId;
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
+use matrix_sdk::ruma::{OwnedRoomId, UserId};
 use matrix_sdk::{Room, RoomState, StoreError};
 
 use crate::message::{DisplayMessage, get_room_messages};
@@ -58,6 +58,19 @@ impl DisplayRoom {
     #[must_use]
     pub fn into_room(&self) -> RoomWrap {
         RoomWrap(self.room.clone())
+    }
+
+    /// Create a new room and invite a user to this room
+    ///
+    /// # Errors
+    ///
+    /// - When the room creation failed
+    /// - When the invination failed
+    pub async fn invite_user(
+        &self,
+        user_id: &UserId,
+    ) -> Result<(), matrix_sdk::Error> {
+        self.room.invite_user_by_id(user_id).await
     }
 
     /// Create a new display room from a [`Room`]

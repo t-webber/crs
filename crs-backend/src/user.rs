@@ -6,7 +6,6 @@ use std::thread;
 
 use matrix_sdk::config::SyncSettings;
 use matrix_sdk::event_handler::EventHandlerHandle;
-use matrix_sdk::ruma::UserId;
 use matrix_sdk::ruma::api::client::room::create_room::v3::Request as CreateRoomRequest;
 use matrix_sdk::ruma::events::room::message::SyncRoomMessageEvent;
 use matrix_sdk::{Client, ClientBuildError, Error, Room};
@@ -29,13 +28,13 @@ impl User {
     ///
     /// - When the room creation failed
     /// - When the invination failed
-    pub async fn create_room_with(
+    pub async fn create_room_with_name(
         &self,
-        user_id: &UserId,
+        name: Option<String>,
     ) -> Result<Room, Error> {
-        let room = self.client.create_room(CreateRoomRequest::new()).await?;
-        room.invite_user_by_id(user_id).await?;
-        Ok(room)
+        let mut req = CreateRoomRequest::new();
+        req.name = name;
+        self.client.create_room(req).await
     }
 
     /// Enable synchronisation with homeserver

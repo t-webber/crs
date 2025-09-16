@@ -22,7 +22,7 @@ use ratatui::layout::Rect;
 #[expect(unused_variables, reason = "trait def")]
 #[expect(clippy::arbitrary_source_item_ordering, reason = "chrological")]
 pub trait Component {
-    /// Renders the component on the given frame
+    /// Renders the component in the given area
     fn draw(&self, frame: &mut Frame<'_>, area: Rect);
 
     /// Data returned to the parent component on update
@@ -35,10 +35,8 @@ pub trait Component {
     ///
     /// # Returns
     ///
-    /// - `Ok(Some(state))` if there is something to be done by the parent
-    ///   component
-    /// - `Ok(None)` if nothing else needs to be done
-    /// - `Err(err)` if something unexpected occured
+    /// - `Some(state)` if there is something to be done by the parent component
+    /// - `None` if nothing else needs to be done
     fn on_event(
         &mut self,
         event: Event,
