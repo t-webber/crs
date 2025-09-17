@@ -68,9 +68,9 @@ impl DisplayRoom {
     /// - When the invination failed
     pub async fn invite_user(
         &self,
-        user_id: &UserId,
+        user_id: &str,
     ) -> Result<(), matrix_sdk::Error> {
-        self.room.invite_user_by_id(user_id).await
+        self.room.invite_user_by_id(&UserId::parse(user_id)?).await
     }
 
     /// Create a new display room from a [`Room`]

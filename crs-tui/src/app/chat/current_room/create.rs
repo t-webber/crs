@@ -32,7 +32,7 @@ impl Component for CreateRoom {
     #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let height = Input::HEIGHT_WITH_LABEL + 2;
-        let width = area.width - 2;
+        let width = (area.width - 2).min(50);
 
         let popup_area = grid_center(
             Constraint::Length(width),

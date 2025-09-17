@@ -2,7 +2,8 @@
 
 mod create;
 mod discussion;
-mod invited;
+mod invite_member;
+mod invited_not_joined;
 mod search;
 
 extern crate alloc;
@@ -22,8 +23,9 @@ use ratatui::widgets::{Paragraph, Wrap};
 use crate::app::chat::current_room::create::CreateRoom;
 pub use crate::app::chat::current_room::create::CreateRoomAction;
 use crate::app::chat::current_room::discussion::Discussion;
-use crate::app::chat::current_room::invited::{
-    AcceptInvitation, InvitationPopup
+use crate::app::chat::current_room::invite_member::InviteMemberPopup;
+use crate::app::chat::current_room::invited_not_joined::{
+    AcceptInvitation, InvitationToRoomPopup
 };
 use crate::app::chat::current_room::search::RoomSearch;
 use crate::ui::component::Component;
@@ -91,7 +93,7 @@ impl CurrentRoom {
         );
         if room_handle.has_invitation() {
             drop(room_handle);
-            self.child = CurrentRoomChild::Invited(InvitationPopup, room);
+            self.child = CurrentRoomChild::Invited(InvitationToRoomPopup, room);
         } else if let Err(err) = room_handle.as_messages() {
             let err_msg = err.to_string();
             drop(room_handle);
@@ -123,6 +125,7 @@ impl Component for CurrentRoom {
             CurrentRoomChild::Discussion(child) => child.draw(frame, layout[1]),
             CurrentRoomChild::Error(err_msg, _) =>
                 Self::draw_error(err_msg, frame, layout[1]),
+            CurrentRoomChild::Invite(invite) => invite.draw(frame, layout[1]),
             CurrentRoomChild::Invited(child, _) => child.draw(frame, layout[1]),
             CurrentRoomChild::None => NoRoomSelected.draw(frame, layout[1]),
             CurrentRoomChild::Search(child, _) => child.draw(frame, layout[1]),
@@ -132,14 +135,22 @@ impl Component for CurrentRoom {
     #[expect(clippy::unreachable, reason = "just checked monothread data")]
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         if let Some(key_event) = event.as_key_press_event()
-            && key_event.code.is_char('n')
             && key_event.modifiers & KeyModifiers::CONTROL
                 == KeyModifiers::CONTROL
         {
-            let old_room = self.child.take_room();
-            self.child =
-                CurrentRoomChild::CreateRoom(CreateRoom::new(), old_room);
-            return None;
+            if key_event.code.is_char('n') {
+                let old_room = self.child.take_room();
+                self.child =
+                    CurrentRoomChild::CreateRoom(CreateRoom::new(), old_room);
+                return None;
+            }
+
+            #[expect(clippy::unwrap_used, reason = "checked w/ has_room")]
+            if key_event.code.is_char('j') && self.child.has_room() {
+                let room = self.child.take_room().unwrap();
+                self.child =
+                    CurrentRoomChild::Invite(InviteMemberPopup::new(room));
+            }
         }
 
         match &mut self.child {
@@ -151,8 +162,13 @@ impl Component for CurrentRoom {
                 discussion.on_event(event).await;
             }
 
+            CurrentRoomChild::Invite(invite_member) => {
+                let _: Infallible = invite_member.on_event(event).await?;
+            }
+
             CurrentRoomChild::Invited(invitation_popup, _) => {
-                let AcceptInvitation = invitation_popup.on_event(event).await?;
+                let _: AcceptInvitation =
+                    invitation_popup.on_event(event).await?;
                 match take(&mut self.child) {
                     CurrentRoomChild::Invited(_, room) =>
                         self.accept_invitation(room).await,
@@ -181,7 +197,7 @@ impl Component for CurrentRoom {
         match response_data {
             UpdateCurrentRoomPanel::Error(error) => {
                 let old_room = self.child.take_room();
-                self.child = CurrentRoomChild::Error(error, old_room)
+                self.child = CurrentRoomChild::Error(error, old_room);
             }
 
             UpdateCurrentRoomPanel::NewRoom(new_room) =>
@@ -207,9 +223,11 @@ enum CurrentRoomChild {
     Discussion(Discussion),
     /// An error occurred and needs to be displayed
     Error(String, Option<Arc<Mutex<DisplayRoom>>>),
+    /// Invite some people to a room
+    Invite(InviteMemberPopup),
     /// The current roomed hasn't been joined by the user yet, but it has a
     /// pending invitation.
-    Invited(InvitationPopup, Arc<Mutex<DisplayRoom>>),
+    Invited(InvitationToRoomPopup, Arc<Mutex<DisplayRoom>>),
     /// No room was selected yet.
     #[default]
     None,
@@ -221,6 +239,17 @@ enum CurrentRoomChild {
 }
 
 impl CurrentRoomChild {
+    /// Checks if a room is currently specified
+    const fn has_room(&self) -> bool {
+        match self {
+            Self::Discussion(_) | Self::Invite(_) | Self::Invited(..) => true,
+            Self::None => false,
+            Self::Error(_, room)
+            | Self::CreateRoom(_, room)
+            | Self::Search(_, room) => room.is_some(),
+        }
+    }
+
     /// Checks if current state is a discussion, meaning the client can interact
     /// with the room without issues.
     const fn is_discussion(&self) -> bool {
@@ -240,7 +269,8 @@ impl CurrentRoomChild {
     /// exists.
     fn take_room(&mut self) -> Option<Arc<Mutex<DisplayRoom>>> {
         match take(self) {
-            Self::Discussion(discussion) => Some(discussion.room()),
+            Self::Discussion(discussion) => Some(discussion.into_room()),
+            Self::Invite(invite) => Some(invite.into_room()),
             Self::Invited(_, room) => Some(room),
             Self::None => None,
             Self::Error(_, room)

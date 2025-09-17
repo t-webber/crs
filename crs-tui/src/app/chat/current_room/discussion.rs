@@ -25,14 +25,14 @@ pub struct Discussion {
 }
 
 impl Discussion {
+    /// Returns the underlying [`RoomDisplay`]
+    pub fn into_room(self) -> Arc<Mutex<DisplayRoom>> {
+        self.room
+    }
+
     /// Open a new conversation for the given room
     pub const fn new(room: Arc<Mutex<DisplayRoom>>) -> Self {
         Self { room, message_prompt: Input::new().with_active() }
-    }
-
-    /// Returns the underlying [`RoomDisplay`]
-    pub fn room(self) -> Arc<Mutex<DisplayRoom>> {
-        self.room
     }
 
     /// Checks if the current room is the same that the provided one, by

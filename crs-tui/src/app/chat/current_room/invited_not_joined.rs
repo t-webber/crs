@@ -14,9 +14,9 @@ use crate::ui::widgets::{InstructionsBuilder, linear_center};
 pub struct AcceptInvitation;
 
 /// Invitation popup to a channel
-pub struct InvitationPopup;
+pub struct InvitationToRoomPopup;
 
-impl Component for InvitationPopup {
+impl Component for InvitationToRoomPopup {
     type ResponseData = Infallible;
     type UpdateState = AcceptInvitation;
 
