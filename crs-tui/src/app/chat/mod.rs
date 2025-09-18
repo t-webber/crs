@@ -42,19 +42,18 @@ impl ChatPage {
     /// The rooms and their content will load in the background.
     pub fn new(user: Arc<User>) -> Self {
         let rooms = Arc::new(Mutex::new(vec![]));
-        let menu = RoomList::new(Arc::clone(&rooms));
-        let mut this =
+        let mut menu = RoomList::new(Arc::clone(&rooms));
+        menu.end_loading(); // TODO
+        let this =
             Self { rooms, user, menu, current_room: CurrentRoom::default() };
         this.synchronise_rooms();
         this
     }
 
     /// Synchronise the existing rooms, including name and messages
-    fn synchronise_rooms(&mut self) {
+    fn synchronise_rooms(&self) {
         let rooms = Arc::clone(&self.rooms);
         let user = Arc::clone(&self.user);
-        user.wait_for_visible_room();
-        self.menu.end_loading();
         let _handle = tokio::spawn(async move {
             loop {
                 let local_rooms = Arc::clone(&rooms);
