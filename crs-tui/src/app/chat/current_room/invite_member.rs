@@ -71,7 +71,7 @@ impl Component for InviteMemberPopup {
         if let Some(err) = &self.error {
             frame.render_widget(
                 Text::from(err.as_str()).style(Style::new().fg(Color::Red)),
-                area,
+                layout[1],
             );
         }
     }
@@ -82,9 +82,9 @@ impl Component for InviteMemberPopup {
             && let Err(err) = safe_unlock(&self.room)
                 .invite_user(&self.person.take_value())
                 .await
-            {
-                self.error = Some(err.to_string());
-            }
+        {
+            self.error = Some(err.to_string());
+        }
 
         self.person.on_event(event).await
     }

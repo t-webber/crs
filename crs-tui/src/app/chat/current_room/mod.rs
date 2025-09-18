@@ -151,6 +151,8 @@ impl Component for CurrentRoom {
                 self.child =
                     CurrentRoomChild::Invite(InviteMemberPopup::new(room));
             }
+
+            return None;
         }
 
         match &mut self.child {
