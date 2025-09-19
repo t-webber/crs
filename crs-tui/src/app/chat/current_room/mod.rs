@@ -219,8 +219,11 @@ struct CreateRoom(Prompt);
 
 impl CreateRoom {
     /// Create a new [`CreateRoom`] with the right titles.
-    const fn new() -> Self {
-        Self(Prompt::new(Input::new().with_active(), "Name of room to create"))
+    fn new() -> Self {
+        Self(Prompt::new(
+            Input::new().with_active(),
+            " Name of the room to create ",
+        ))
     }
 }
 

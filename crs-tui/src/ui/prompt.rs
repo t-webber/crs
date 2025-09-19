@@ -4,11 +4,14 @@ use core::convert::Infallible;
 
 use ratatui::Frame;
 use ratatui::crossterm::event::Event;
-use ratatui::layout::{Constraint, Rect};
+use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use ratatui::style::{Color, Style};
+use ratatui::text::Text;
+use ratatui::widgets::Block;
 
 use crate::ui::component::Component;
 use crate::ui::input::Input;
-use crate::ui::widgets::grid_center;
+use crate::ui::widgets::{grid_center, saturating_cast};
 
 /// Struct to update the contents of the error
 pub struct ErrorMessage(pub String);
@@ -39,8 +42,15 @@ impl Component for Prompt {
 
     #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
-        let height = self.input.height();
         let width = (area.width - 2).min(50);
+
+        let error_height = self.error.as_ref().map_or(0, |error| {
+            saturating_cast(error.len()).saturating_div(width).saturating_add(1)
+        });
+
+        let input_height = self.input.height();
+
+        let height = input_height + 4 + error_height;
 
         let popup_area = grid_center(
             Constraint::Length(width),
@@ -48,7 +58,27 @@ impl Component for Prompt {
             area,
         );
 
-        self.input.draw(frame, popup_area);
+        let block = Block::bordered()
+            .title(self.title)
+            .title_alignment(Alignment::Center)
+            .title_style(Style::new().fg(Color::Yellow));
+        frame.render_widget(block, popup_area);
+
+        let layout = Layout::new(Direction::Vertical, [
+            Constraint::Length(input_height),
+            Constraint::Length(error_height),
+        ])
+        .margin(2)
+        .split(popup_area);
+
+        self.input.draw(frame, layout[0]);
+
+        if let Some(error_message) = &self.error {
+            let error_component = Text::from(error_message.as_str())
+                .style(Style::new().fg(Color::Red))
+                .centered();
+            frame.render_widget(error_component, layout[1]);
+        }
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
