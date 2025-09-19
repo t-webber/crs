@@ -97,7 +97,7 @@ impl CurrentRoom {
             let err_msg = err.to_string();
             drop(room_handle);
             self.child = CurrentRoomChild::Error(err_msg, Some(room));
-        } else if !self.child.room_is(&room_handle) {
+        } else {
             drop(room_handle);
             self.child = CurrentRoomChild::Discussion(Discussion::new(room));
         }
