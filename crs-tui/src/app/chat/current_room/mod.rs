@@ -1,6 +1,5 @@
 //! Current display in the chat panel
 
-mod create;
 mod discussion;
 mod invite_member;
 mod invited_not_joined;
@@ -20,8 +19,6 @@ use ratatui::style::{Color, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Wrap};
 
-use crate::app::chat::current_room::create::CreateRoom;
-pub use crate::app::chat::current_room::create::CreateRoomAction;
 use crate::app::chat::current_room::discussion::Discussion;
 use crate::app::chat::current_room::invite_member::InviteMemberPopup;
 use crate::app::chat::current_room::invited_not_joined::{
@@ -29,6 +26,8 @@ use crate::app::chat::current_room::invited_not_joined::{
 };
 use crate::app::chat::current_room::search::RoomSearch;
 use crate::ui::component::Component;
+use crate::ui::input::Input;
+use crate::ui::prompt::Prompt;
 use crate::ui::widgets::{
     InstructionsBuilder, fully_centered_content, saturating_cast
 };
@@ -107,7 +106,7 @@ impl CurrentRoom {
 
 impl Component for CurrentRoom {
     type ResponseData = UpdateCurrentRoomPanel;
-    type UpdateState = CreateRoomAction;
+    type UpdateState = String;
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let constraints: &[Constraint] = if self.child.is_discussion() {
@@ -121,7 +120,7 @@ impl Component for CurrentRoom {
 
         match &self.child {
             CurrentRoomChild::CreateRoom(child, _) =>
-                child.draw(frame, layout[1]),
+                child.0.draw(frame, layout[1]),
             CurrentRoomChild::Discussion(child) => child.draw(frame, layout[1]),
             CurrentRoomChild::Error(err_msg, _) =>
                 Self::draw_error(err_msg, frame, layout[1]),
@@ -157,7 +156,7 @@ impl Component for CurrentRoom {
 
         match &mut self.child {
             CurrentRoomChild::CreateRoom(create_room, _) => {
-                return create_room.on_event(event).await;
+                return create_room.0.on_event(event).await;
             }
 
             CurrentRoomChild::Discussion(discussion) => {
@@ -213,6 +212,14 @@ impl Component for CurrentRoom {
                 );
             }
         }
+    }
+}
+
+struct CreateRoom(Prompt);
+
+impl CreateRoom {
+    fn new() -> Self {
+        Self(Prompt::new(Input::new().with_active(), "Name of room to create"))
     }
 }
 

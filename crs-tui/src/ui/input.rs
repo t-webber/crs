@@ -66,6 +66,15 @@ impl<'label> Input<'label> {
         frame.render_widget(paragraph, area);
     }
 
+    /// Returns the height required to draw the input
+    pub const fn height(&self) -> u16 {
+        if self.label.is_some() {
+            Self::HEIGHT_WITH_LABEL
+        } else {
+            Self::HEIGHT_WITHOUT_LABEL
+        }
+    }
+
     /// Returns the value of the input
     pub fn into_value(self) -> String {
         self.value

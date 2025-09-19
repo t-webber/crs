@@ -1,4 +1,4 @@
-//! Component that handles room creation
+//! Component that displays an input at the middle of the page
 
 use core::convert::Infallible;
 
@@ -11,27 +11,29 @@ use crate::ui::input::Input;
 use crate::ui::widgets::grid_center;
 
 /// Popup to create a room
-pub struct CreateRoom {
+pub struct Prompt {
+    /// Error to display in the prompt
+    error: Option<String>,
     /// Input to enter the name of the room to be create
-    name: Input<'static>,
+    input: Input<'static>,
+    /// Title of the prompt
+    title: &'static str,
 }
 
-impl CreateRoom {
+impl Prompt {
     /// Create [`CreateRoom`] component
-    pub const fn new() -> Self {
-        Self {
-            name: Input::new().with_active().with_label("Create a new room"),
-        }
+    pub const fn new(input: Input<'static>, title: &'static str) -> Self {
+        Self { input, title, error: None }
     }
 }
 
-impl Component for CreateRoom {
-    type ResponseData = Infallible;
-    type UpdateState = CreateRoomAction;
+impl Component for Prompt {
+    type ResponseData = String;
+    type UpdateState = String;
 
     #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
-        let height = Input::HEIGHT_WITH_LABEL + 2;
+        let height = self.input.height();
         let width = (area.width - 2).min(50);
 
         let popup_area = grid_center(
@@ -40,23 +42,20 @@ impl Component for CreateRoom {
             area,
         );
 
-        self.name.draw(frame, popup_area);
+        self.input.draw(frame, popup_area);
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         if let Some(key_event) = event.as_key_press_event()
             && key_event.code.is_enter()
         {
-            return Some(CreateRoomAction(self.name.take_value()));
+            return Some(self.input.take_value());
         }
-        let _: Infallible = self.name.on_event(event).await?;
+        let _: Infallible = self.input.on_event(event).await?;
         None
     }
-}
 
-/// Action of validating the "create room" form.
-///
-/// This struct is the request sent to create a room.
-///
-/// The field contains the name of the room to be create
-pub struct CreateRoomAction(pub String);
+    fn update(&mut self, response_data: Self::ResponseData) {
+        self.error = Some(response_data);
+    }
+}
