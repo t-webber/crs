@@ -13,6 +13,7 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 use crate::credentials::Credentials;
 use crate::ui::component::Component;
 use crate::ui::input::Input;
+use crate::ui::prompt::ErrorMessage;
 use crate::ui::widgets::{Instructions, InstructionsBuilder, grid_center};
 
 /// Height reserved for the error message
@@ -192,7 +193,7 @@ impl LoginPage {
 }
 
 impl Component for LoginPage {
-    type ResponseData = String;
+    type ResponseData = ErrorMessage;
     type UpdateState = Credentials<String>;
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
@@ -246,7 +247,8 @@ impl Component for LoginPage {
     }
 
     fn update(&mut self, response_data: Self::ResponseData) {
-        self.error = response_data;
+        let ErrorMessage(error) = response_data;
+        self.error = error;
         self.current = CurrentInput::default();
     }
 }

@@ -16,7 +16,9 @@ use ratatui::Frame;
 use ratatui::crossterm::event::{Event, KeyModifiers};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 
-use crate::app::chat::current_room::{CurrentRoom, UpdateCurrentRoomPanel};
+use crate::app::chat::current_room::{
+    CreateRoomAction, CurrentRoom, UpdateCurrentRoomPanel
+};
 use crate::app::chat::menu::{ROOM_LIST_WIDTH, RoomList};
 use crate::ui::component::Component;
 use crate::utils::safe_unlock;
@@ -116,7 +118,8 @@ impl Component for ChatPage {
             let new_room = Arc::clone(&safe_unlock(&self.rooms)[index]);
             self.current_room.update(UpdateCurrentRoomPanel::NewRoom(new_room));
         } else {
-            let name = self.current_room.on_event(event).await?;
+            let CreateRoomAction(name) =
+                self.current_room.on_event(event).await?;
             let room_name = if name.is_empty() { None } else { Some(name) };
             match self.user.create_room_with_name(room_name).await {
                 Ok(new_matrix_room) => loop {

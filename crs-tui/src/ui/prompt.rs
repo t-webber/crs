@@ -10,6 +10,12 @@ use crate::ui::component::Component;
 use crate::ui::input::Input;
 use crate::ui::widgets::grid_center;
 
+/// Struct to update the contents of the error
+pub struct ErrorMessage(pub String);
+
+/// Struct to send the data after submission
+pub struct PromptSubmit(pub String);
+
 /// Popup to create a room
 pub struct Prompt {
     /// Error to display in the prompt
@@ -28,8 +34,8 @@ impl Prompt {
 }
 
 impl Component for Prompt {
-    type ResponseData = String;
-    type UpdateState = String;
+    type ResponseData = ErrorMessage;
+    type UpdateState = PromptSubmit;
 
     #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
@@ -49,13 +55,14 @@ impl Component for Prompt {
         if let Some(key_event) = event.as_key_press_event()
             && key_event.code.is_enter()
         {
-            return Some(self.input.take_value());
+            return Some(PromptSubmit(self.input.take_value()));
         }
         let _: Infallible = self.input.on_event(event).await?;
         None
     }
 
     fn update(&mut self, response_data: Self::ResponseData) {
-        self.error = Some(response_data);
+        let ErrorMessage(error) = response_data;
+        self.error = Some(error);
     }
 }

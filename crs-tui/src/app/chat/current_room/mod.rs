@@ -27,7 +27,7 @@ use crate::app::chat::current_room::invited_not_joined::{
 use crate::app::chat::current_room::search::RoomSearch;
 use crate::ui::component::Component;
 use crate::ui::input::Input;
-use crate::ui::prompt::Prompt;
+use crate::ui::prompt::{Prompt, PromptSubmit};
 use crate::ui::widgets::{
     InstructionsBuilder, fully_centered_content, saturating_cast
 };
@@ -104,7 +104,7 @@ impl CurrentRoom {
 
 impl Component for CurrentRoom {
     type ResponseData = UpdateCurrentRoomPanel;
-    type UpdateState = String;
+    type UpdateState = CreateRoomAction;
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let constraints: &[Constraint] = if self.child.is_discussion() {
@@ -154,7 +154,8 @@ impl Component for CurrentRoom {
 
         match &mut self.child {
             CurrentRoomChild::CreateRoom(create_room, _) => {
-                return create_room.0.on_event(event).await;
+                let PromptSubmit(name) = create_room.0.on_event(event).await?;
+                return Some(CreateRoomAction(name));
             }
 
             CurrentRoomChild::Discussion(discussion) => {
@@ -222,6 +223,9 @@ impl CreateRoom {
         Self(Prompt::new(Input::new().with_active(), "Name of room to create"))
     }
 }
+
+/// Action to request a room creation
+pub struct CreateRoomAction(pub String);
 
 /// Type of the content displayed in the chat panel
 #[derive(Default)]

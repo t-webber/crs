@@ -5,6 +5,7 @@ mod login;
 
 extern crate alloc;
 use alloc::sync::Arc;
+use core::convert::Infallible;
 
 use crs_backend::user::User;
 use ratatui::Frame;
@@ -50,7 +51,7 @@ impl App {
 }
 
 impl Component for App {
-    type ResponseData = String;
+    type ResponseData = Infallible;
     type UpdateState = Credentials<String>;
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
