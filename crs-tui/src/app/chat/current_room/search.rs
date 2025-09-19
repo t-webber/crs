@@ -27,7 +27,7 @@ pub struct RoomSearch {
     /// First results corresponding to the search
     ///
     /// This only contains the indices of the rooms in the `rooms` field.
-    results: Vec<(usize, String)>,
+    results: Vec<(usize, Arc<str>)>,
     /// List of all the loaded rooms
     rooms:   Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>,
 }
@@ -88,10 +88,9 @@ impl RoomSearch {
             .enumerate()
             .map(|(idx, (_, name))| {
                 if Some(idx) == self.cursor {
-                    Line::from(format!("*{}*", name.as_str()))
-                        .style(Color::Green)
+                    Line::from(format!("*{name}*")).style(Color::Green)
                 } else {
-                    Line::from(format!(" {} ", name.as_str()))
+                    Line::from(format!(" {name} "))
                 }
             })
             .collect::<Vec<_>>();
@@ -117,7 +116,7 @@ impl RoomSearch {
             if let Ok(name) = safe_unlock(room).as_name()
                 && name.contains(self.input.as_value())
             {
-                self.results.push((index, name.to_owned()));
+                self.results.push((index, name));
                 if self.results.len() >= 20 {
                     return;
                 }

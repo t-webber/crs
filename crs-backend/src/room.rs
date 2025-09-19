@@ -1,6 +1,9 @@
 //! Interface to store the useful data of a room (messages, name, handle, etc.)
 //! to interface it simply.
 
+extern crate alloc;
+use alloc::sync::Arc;
+
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
 use matrix_sdk::ruma::{OwnedRoomId, UserId};
 use matrix_sdk::{Room, RoomState, StoreError};
@@ -14,7 +17,7 @@ pub struct DisplayRoom {
     /// Matrix room
     messages: Result<Vec<DisplayMessage>, matrix_sdk::Error>,
     /// Room's list of messages
-    name:     Result<String, StoreError>,
+    name:     Result<Arc<str>, StoreError>,
     /// Inner associated matrix room
     room:     Room,
     /// Room unique identifier
@@ -38,8 +41,8 @@ impl DisplayRoom {
     /// Returns an error if the [algorithm][1] to compute the room name fails.
     ///
     /// [1]: <https://matrix.org/docs/spec/client_server/latest#calculating-the-display-name-for-a-room>
-    pub const fn as_name(&self) -> Result<&String, &StoreError> {
-        self.name.as_ref()
+    pub fn as_name(&self) -> Result<Arc<str>, &StoreError> {
+        self.name.as_ref().cloned()
     }
 
     /// Indicates whether an invitation is pending for this room.
@@ -99,7 +102,7 @@ impl DisplayRoom {
     fn update_with(
         &mut self,
         messages: Result<Vec<DisplayMessage>, matrix_sdk::Error>,
-        name: Result<String, StoreError>,
+        name: Result<Arc<str>, StoreError>,
     ) {
         if messages.is_ok() || self.messages.is_err() {
             self.messages = messages;
@@ -147,6 +150,6 @@ impl RoomWrap {
 /// Returns an error if the [algorithm][1] to compute the room name fails.
 ///
 /// [1]: <https://matrix.org/docs/spec/client_server/latest#calculating-the-display-name-for-a-room>
-pub async fn get_room_name(room: &Room) -> Result<String, StoreError> {
-    room.display_name().await.map(|name| name.to_string())
+pub async fn get_room_name(room: &Room) -> Result<Arc<str>, StoreError> {
+    room.display_name().await.map(|name| Arc::from(name.to_room_alias_name()))
 }

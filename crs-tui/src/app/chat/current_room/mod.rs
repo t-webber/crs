@@ -31,7 +31,7 @@ use crate::ui::prompt::Prompt;
 use crate::ui::widgets::{
     InstructionsBuilder, fully_centered_content, saturating_cast
 };
-use crate::utils::safe_unlock;
+use crate::utils::{UNKNOWN_NAME, safe_unlock};
 
 /// Chat panel with the currently selected room, or the messages for errors and
 /// popups if there are any.
@@ -40,7 +40,7 @@ pub struct CurrentRoom {
     /// Content currently displayed on the screen
     child:     CurrentRoomChild,
     /// Name of the room that is currently selected
-    room_name: String,
+    room_name: Arc<str>,
 }
 
 impl CurrentRoom {
@@ -76,7 +76,7 @@ impl CurrentRoom {
 
     /// Displays the name of the room at the top of the chat panel
     fn draw_room_name(&self, frame: &mut Frame<'_>, area: Rect) {
-        let room_name_widget = Text::from(self.room_name.as_str())
+        let room_name_widget = Text::from(self.room_name.as_ref())
             .style(Style::new().fg(Color::Yellow))
             .alignment(Alignment::Center);
 
@@ -86,10 +86,8 @@ impl CurrentRoom {
     /// Open a new room in the discussion panel
     fn select_new_room(&mut self, room: Arc<Mutex<DisplayRoom>>) {
         let room_handle = safe_unlock(&room);
-        self.room_name = room_handle.as_name().map_or_else(
-            |_| String::from("<unknown channel>"),
-            ToOwned::to_owned,
-        );
+        self.room_name =
+            room_handle.as_name().unwrap_or_else(|_| UNKNOWN_NAME.clone());
         if room_handle.has_invitation() {
             drop(room_handle);
             self.child = CurrentRoomChild::Invited(InvitationToRoomPopup, room);
@@ -215,10 +213,12 @@ impl Component for CurrentRoom {
     }
 }
 
+/// Component to create a room, with a given name
 struct CreateRoom(Prompt);
 
 impl CreateRoom {
-    fn new() -> Self {
+    /// Create a new [`CreateRoom`] with the right titles.
+    const fn new() -> Self {
         Self(Prompt::new(Input::new().with_active(), "Name of room to create"))
     }
 }

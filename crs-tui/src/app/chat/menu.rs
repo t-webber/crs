@@ -17,7 +17,7 @@ use crate::ui::component::Component;
 use crate::ui::widgets::{
     Instructions, InstructionsBuilder, fully_centered_content, grid_center, saturating_cast
 };
-use crate::utils::safe_unlock;
+use crate::utils::{UNKNOWN_NAME, safe_unlock};
 
 /// Instructions to display keymaps
 static INSTRUCTIONS: LazyLock<Instructions<'static>> = LazyLock::new(|| {
@@ -84,13 +84,14 @@ impl RoomList {
     fn draw_room_list(&self, frame: &mut Frame<'_>, area: Rect) {
         let (start, current_index, stop) = self.get_section_delimitations(area);
 
-        let unknown = String::from("<unknown>");
         let name_list = safe_unlock(&self.rooms)[start..stop]
             .iter()
             .enumerate()
             .map(|(idx, room)| {
                 let room_locked = safe_unlock(room);
-                let name = room_locked.as_name().unwrap_or(&unknown).as_str();
+                let name = room_locked
+                    .as_name()
+                    .unwrap_or_else(|_| UNKNOWN_NAME.clone());
                 let (text, colour) = if idx == current_index {
                     (format!(">{name}"), Color::Green)
                 } else {

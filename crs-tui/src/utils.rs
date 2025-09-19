@@ -1,6 +1,12 @@
 //! Defines reusable functions for lousy redundant tasks
 
-use std::sync::{Mutex, MutexGuard};
+extern crate alloc;
+use alloc::sync::Arc;
+use std::sync::{LazyLock, Mutex, MutexGuard};
+
+/// String to display when failed to fetch the room's name
+pub static UNKNOWN_NAME: LazyLock<Arc<str>> =
+    LazyLock::new(|| Arc::from("<unknown name>"));
 
 /// Safely unlock a mutex without panicking.
 ///
