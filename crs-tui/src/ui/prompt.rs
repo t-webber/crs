@@ -13,39 +13,39 @@ use crate::ui::component::Component;
 use crate::ui::input::Input;
 use crate::ui::widgets::{grid_center, saturating_cast};
 
-/// Struct to update the contents of the error
-pub struct ErrorMessage(pub String);
-
 /// Struct to send the data after submission
 pub struct PromptSubmit(pub String);
 
 /// Popup to create a room
 pub struct Prompt {
-    /// Error to display in the prompt
-    error: Option<String>,
     /// Input to enter the name of the room to be create
-    input: Input<'static>,
+    input:   Input<'static>,
+    /// Message to display in the prompt, including error messages and loading
+    /// statuses
+    message: Status,
     /// Title of the prompt
-    title: &'static str,
+    title:   &'static str,
 }
 
 impl Prompt {
     /// Create [`CreateRoom`] component
     pub const fn new(input: Input<'static>, title: &'static str) -> Self {
-        Self { input, title, error: None }
+        Self { input, title, message: Status::None }
     }
 }
 
 impl Component for Prompt {
-    type ResponseData = ErrorMessage;
+    type ResponseData = Status;
     type UpdateState = PromptSubmit;
 
     #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         let width = (area.width - 2).min(50);
 
-        let error_height = self.error.as_ref().map_or(0, |error| {
-            saturating_cast(error.len()).saturating_div(width).saturating_add(1)
+        let error_height = self.message.as_content().map_or(0, |error| {
+            saturating_cast(error.0.len())
+                .saturating_div(width)
+                .saturating_add(1)
         });
 
         let input_height = self.input.height();
@@ -73,9 +73,9 @@ impl Component for Prompt {
 
         self.input.draw(frame, layout[0]);
 
-        if let Some(error_message) = &self.error {
-            let error_component = Text::from(error_message.as_str())
-                .style(Style::new().fg(Color::Red))
+        if let Some((error_message, colour)) = self.message.as_content() {
+            let error_component = Text::from(error_message)
+                .style(Style::new().fg(colour))
                 .centered();
             frame.render_widget(error_component, layout[1]);
         }
@@ -92,7 +92,33 @@ impl Component for Prompt {
     }
 
     fn update(&mut self, response_data: Self::ResponseData) {
-        let ErrorMessage(error) = response_data;
-        self.error = Some(error);
+        self.message = response_data;
+        if matches!(self.message, Status::Submitting) {
+            self.input.set_active(false);
+        } else {
+            self.input.set_active(true);
+        }
+    }
+}
+
+/// Status information to inform the user on
+pub enum Status {
+    /// Error message to display
+    Error(String),
+    /// Nothing to display
+    None,
+    /// Submition in progress
+    Submitting,
+}
+
+impl Status {
+    /// Returns the message to display, as well as the colour if it has a
+    /// mesaage.
+    const fn as_content(&self) -> Option<(&str, Color)> {
+        match self {
+            Self::None => None,
+            Self::Error(message) => Some((message.as_str(), Color::Red)),
+            Self::Submitting => Some(("Submitting...", Color::Green)),
+        }
     }
 }

@@ -13,7 +13,6 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 use crate::credentials::Credentials;
 use crate::ui::component::Component;
 use crate::ui::input::Input;
-use crate::ui::prompt::ErrorMessage;
 use crate::ui::widgets::{Instructions, InstructionsBuilder, grid_center};
 
 /// Height reserved for the error message
@@ -46,6 +45,9 @@ enum CurrentInput {
     /// User is focused on the username input
     Username,
 }
+
+/// Struct to update the contents of the error
+pub struct ErrorMessage(pub String);
 
 /// UI handler for the login page
 ///

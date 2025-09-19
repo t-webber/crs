@@ -27,7 +27,7 @@ use crate::app::chat::current_room::invited_not_joined::{
 use crate::app::chat::current_room::search::RoomSearch;
 use crate::ui::component::Component;
 use crate::ui::input::Input;
-use crate::ui::prompt::{Prompt, PromptSubmit};
+use crate::ui::prompt::{Prompt, PromptSubmit, Status};
 use crate::ui::widgets::{
     InstructionsBuilder, fully_centered_content, saturating_cast
 };
@@ -155,6 +155,7 @@ impl Component for CurrentRoom {
         match &mut self.child {
             CurrentRoomChild::CreateRoom(create_room, _) => {
                 let PromptSubmit(name) = create_room.0.on_event(event).await?;
+                create_room.0.update(Status::Submitting);
                 return Some(CreateRoomAction(name));
             }
 
@@ -219,7 +220,7 @@ struct CreateRoom(Prompt);
 
 impl CreateRoom {
     /// Create a new [`CreateRoom`] with the right titles.
-    fn new() -> Self {
+    const fn new() -> Self {
         Self(Prompt::new(
             Input::new().with_active(),
             " Name of the room to create ",
