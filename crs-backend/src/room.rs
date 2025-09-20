@@ -113,6 +113,30 @@ impl DisplayRoom {
     }
 }
 
+/// Room that has for sure a name
+pub struct NamedRoom {
+    /// Name of the room
+    name: Arc<str>,
+    /// Underlying room
+    room: Room,
+}
+
+impl NamedRoom {
+    /// Returns the name of the room
+    #[must_use]
+    pub fn as_name(&self) -> Arc<str> {
+        Arc::clone(&self.name)
+    }
+}
+
+impl TryFrom<DisplayRoom> for NamedRoom {
+    type Error = StoreError;
+
+    fn try_from(value: DisplayRoom) -> Result<Self, Self::Error> {
+        Ok(Self { name: value.name?, room: value.room })
+    }
+}
+
 /// Room wrapper to only keep the room wrapper.
 pub struct RoomWrap(Room);
 
