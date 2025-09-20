@@ -1,5 +1,7 @@
 //! Data structure to contain the data of a logged in user
 
+extern crate alloc;
+use alloc::sync::Arc;
 use core::convert::Infallible;
 use core::time::Duration;
 use std::thread;
@@ -71,7 +73,7 @@ impl User {
     pub async fn list_rooms(&self) -> Vec<DisplayRoom> {
         let mut rooms: Vec<DisplayRoom> = vec![];
         for room in self.client.rooms() {
-            rooms.push(DisplayRoom::new(room).await);
+            rooms.push(DisplayRoom::new(Arc::new(room)).await);
         }
         rooms
     }
@@ -97,7 +99,7 @@ impl User {
         for room in rooms {
             let callback = on_room_load.clone();
             let handle = tokio::spawn(async move {
-                callback(DisplayRoom::new(room).await);
+                callback(DisplayRoom::new(Arc::new(room)).await);
             });
             futures.push(handle);
         }

@@ -3,6 +3,7 @@
 
 extern crate alloc;
 use alloc::sync::Arc;
+use core::fmt::{self, Display, Formatter};
 
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
 use matrix_sdk::ruma::{OwnedRoomId, UserId};
@@ -19,7 +20,7 @@ pub struct DisplayRoom {
     /// Room's list of messages
     name:     Result<Arc<str>, StoreError>,
     /// Inner associated matrix room
-    room:     Room,
+    room:     Arc<Room>,
     /// Room unique identifier
     room_id:  OwnedRoomId,
 }
@@ -57,12 +58,6 @@ impl DisplayRoom {
         &self.room_id
     }
 
-    /// Clones and returns the inner room
-    #[must_use]
-    pub fn into_room(&self) -> RoomWrap {
-        RoomWrap(self.room.clone())
-    }
-
     /// Create a new room and invite a user to this room
     ///
     /// # Errors
@@ -77,7 +72,7 @@ impl DisplayRoom {
     }
 
     /// Create a new display room from a [`Room`]
-    pub async fn new(room: Room) -> Self {
+    pub async fn new(room: Arc<Room>) -> Self {
         let name = get_room_name(&room).await;
         let messages = get_room_messages(&room).await;
 
@@ -118,7 +113,7 @@ pub struct NamedRoom {
     /// Name of the room
     name: Arc<str>,
     /// Underlying room
-    room: Room,
+    room: Arc<Room>,
 }
 
 impl NamedRoom {
@@ -127,18 +122,33 @@ impl NamedRoom {
     pub fn as_name(&self) -> Arc<str> {
         Arc::clone(&self.name)
     }
+
+    /// Return the underlying room object to do some actions on the matrix room
+    #[must_use]
+    pub fn as_room(&self) -> RoomWrap {
+        RoomWrap(Arc::clone(&self.room))
+    }
 }
 
-impl TryFrom<DisplayRoom> for NamedRoom {
-    type Error = StoreError;
+impl Display for NamedRoom {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        Display::fmt(&self.as_name(), f)
+    }
+}
 
-    fn try_from(value: DisplayRoom) -> Result<Self, Self::Error> {
-        Ok(Self { name: value.name?, room: value.room })
+impl<'room> TryFrom<&'room DisplayRoom> for NamedRoom {
+    type Error = &'room StoreError;
+
+    fn try_from(value: &'room DisplayRoom) -> Result<Self, Self::Error> {
+        Ok(Self {
+            name: Arc::clone(&value.as_name()?),
+            room: Arc::clone(&value.room),
+        })
     }
 }
 
 /// Room wrapper to only keep the room wrapper.
-pub struct RoomWrap(Room);
+pub struct RoomWrap(Arc<Room>);
 
 impl RoomWrap {
     /// Accepts the invitation received to join the room.
