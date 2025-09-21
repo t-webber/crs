@@ -5,6 +5,7 @@ use std::sync::Mutex;
 
 use crs_backend::room::DisplayRoom;
 
+use crate::derive_component;
 use crate::ui::input::Input;
 use crate::ui::prompt::Prompt;
 use crate::utils::safe_unlock;
@@ -51,10 +52,10 @@ impl TryFrom<Arc<Mutex<DisplayRoom>>> for NamedRoom {
 pub struct RoomSearch(Prompt<NamedRoom>);
 
 impl RoomSearch {
-    fn new(room_list: Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>) -> Self {
+    pub fn new(room_list: Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>) -> Self {
         let named_room_list = safe_unlock(&room_list)
             .iter()
-            .filter_map(|room| Arc::clone(&room).try_into().ok())
+            .filter_map(|room| Arc::clone(room).try_into().ok())
             .collect();
         Self(Prompt::new_with_list(
             Input::new().with_active(),
@@ -63,3 +64,5 @@ impl RoomSearch {
         ))
     }
 }
+
+derive_component!(RoomSearch, Prompt<NamedRoom>);
