@@ -91,7 +91,7 @@ impl RoomList {
                 let room_locked = safe_unlock(room);
                 let name = room_locked
                     .as_name()
-                    .unwrap_or_else(|_| UNKNOWN_NAME.clone());
+                    .unwrap_or_else(|| UNKNOWN_NAME.clone());
                 let (text, colour) = if idx == current_index {
                     (format!(">{name}"), Color::Green)
                 } else {

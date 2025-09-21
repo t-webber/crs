@@ -1,9 +1,9 @@
 //! Current display in the chat panel
 
+mod actions;
 mod discussion;
 mod invite_member;
 mod invited_not_joined;
-mod search;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -19,15 +19,16 @@ use ratatui::style::{Color, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Wrap};
 
+use crate::app::chat::current_room::actions::create_room::CreateRoom;
+pub use crate::app::chat::current_room::actions::create_room::CreateRoomAction;
+use crate::app::chat::current_room::actions::search_room::RoomSearch;
 use crate::app::chat::current_room::discussion::Discussion;
 use crate::app::chat::current_room::invite_member::InviteMemberPopup;
 use crate::app::chat::current_room::invited_not_joined::{
     AcceptInvitation, InvitationToRoomPopup
 };
-use crate::app::chat::current_room::search::RoomSearch;
 use crate::ui::component::Component;
-use crate::ui::input::Input;
-use crate::ui::prompt::{Prompt, PromptSubmit, Status};
+use crate::ui::prompt::Status;
 use crate::ui::widgets::{
     InstructionsBuilder, fully_centered_content, saturating_cast
 };
@@ -46,7 +47,7 @@ pub struct CurrentRoom {
 impl CurrentRoom {
     /// Accept invitation and display the new status.
     async fn accept_invitation(&mut self, room: Arc<Mutex<DisplayRoom>>) {
-        let room_handle = safe_unlock(&room).into_room();
+        let room_handle = safe_unlock(&room).as_room();
         match room_handle.accept_invitation().await {
             Err(err) =>
                 self.child =
@@ -87,7 +88,7 @@ impl CurrentRoom {
     fn select_new_room(&mut self, room: Arc<Mutex<DisplayRoom>>) {
         let room_handle = safe_unlock(&room);
         self.room_name =
-            room_handle.as_name().unwrap_or_else(|_| UNKNOWN_NAME.clone());
+            room_handle.as_name().unwrap_or_else(|| UNKNOWN_NAME.clone());
         if room_handle.has_invitation() {
             drop(room_handle);
             self.child = CurrentRoomChild::Invited(InvitationToRoomPopup, room);
@@ -118,7 +119,7 @@ impl Component for CurrentRoom {
 
         match &self.child {
             CurrentRoomChild::CreateRoom(child, _) =>
-                child.0.draw(frame, layout[1]),
+                child.draw(frame, layout[1]),
             CurrentRoomChild::Discussion(child) => child.draw(frame, layout[1]),
             CurrentRoomChild::Error(err_msg, _) =>
                 Self::draw_error(err_msg, frame, layout[1]),
@@ -154,8 +155,8 @@ impl Component for CurrentRoom {
 
         match &mut self.child {
             CurrentRoomChild::CreateRoom(create_room, _) => {
-                let PromptSubmit(name) = create_room.0.on_event(event).await?;
-                create_room.0.update(Status::Submitting);
+                let name = create_room.on_event(event).await?;
+                create_room.update(Status::Submitting);
                 return Some(CreateRoomAction(name));
             }
 
@@ -186,7 +187,7 @@ impl Component for CurrentRoom {
                         _ => unreachable!(),
                     }
                 } else if let Some(new_room) = search.on_event(event).await {
-                    self.select_new_room(new_room);
+                    self.select_new_room(new_room.as_room());
                 },
 
             CurrentRoomChild::None | CurrentRoomChild::Error(..) => (),
@@ -214,22 +215,6 @@ impl Component for CurrentRoom {
         }
     }
 }
-
-/// Component to create a room, with a given name
-struct CreateRoom(Prompt);
-
-impl CreateRoom {
-    /// Create a new [`CreateRoom`] with the right titles.
-    const fn new() -> Self {
-        Self(Prompt::new(
-            Input::new().with_active(),
-            " Name of the room to create ",
-        ))
-    }
-}
-
-/// Action to request a room creation
-pub struct CreateRoomAction(pub String);
 
 /// Type of the content displayed in the chat panel
 #[derive(Default)]
