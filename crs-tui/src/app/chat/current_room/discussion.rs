@@ -79,7 +79,7 @@ impl Component for Discussion {
 
         if key_event.code.is_enter() {
             let message = self.message_prompt.take_value();
-            let room = safe_unlock(&self.room).into_room();
+            let room = safe_unlock(&self.room).as_room();
             room.send_plain(&message).await.unwrap();
             return None;
         }

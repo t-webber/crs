@@ -3,7 +3,6 @@
 
 extern crate alloc;
 use alloc::sync::Arc;
-use core::fmt::{self, Display, Formatter};
 
 use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
 use matrix_sdk::ruma::{OwnedRoomId, UserId};
@@ -42,8 +41,15 @@ impl DisplayRoom {
     /// Returns an error if the [algorithm][1] to compute the room name fails.
     ///
     /// [1]: <https://matrix.org/docs/spec/client_server/latest#calculating-the-display-name-for-a-room>
-    pub fn as_name(&self) -> Result<Arc<str>, &StoreError> {
-        self.name.as_ref().cloned()
+    #[must_use]
+    pub fn as_name(&self) -> Option<Arc<str>> {
+        self.name.as_ref().ok().cloned()
+    }
+
+    /// Returns the underlying room, to do actions on matrix
+    #[must_use]
+    pub fn as_room(&self) -> RoomWrap {
+        RoomWrap(Arc::clone(&self.room))
     }
 
     /// Indicates whether an invitation is pending for this room.
@@ -105,45 +111,6 @@ impl DisplayRoom {
         if name.is_ok() || self.name.is_err() {
             self.name = name;
         }
-    }
-}
-
-/// Room that has for sure a name
-pub struct NamedRoom {
-    /// Name of the room
-    name: Arc<str>,
-    /// Underlying room
-    room: Arc<Room>,
-}
-
-impl NamedRoom {
-    /// Returns the name of the room
-    #[must_use]
-    pub fn as_name(&self) -> Arc<str> {
-        Arc::clone(&self.name)
-    }
-
-    /// Return the underlying room object to do some actions on the matrix room
-    #[must_use]
-    pub fn as_room(&self) -> RoomWrap {
-        RoomWrap(Arc::clone(&self.room))
-    }
-}
-
-impl Display for NamedRoom {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        Display::fmt(&self.as_name(), f)
-    }
-}
-
-impl<'room> TryFrom<&'room DisplayRoom> for NamedRoom {
-    type Error = &'room StoreError;
-
-    fn try_from(value: &'room DisplayRoom) -> Result<Self, Self::Error> {
-        Ok(Self {
-            name: Arc::clone(&value.as_name()?),
-            room: Arc::clone(&value.room),
-        })
     }
 }
 
