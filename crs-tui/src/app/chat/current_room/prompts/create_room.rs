@@ -1,3 +1,5 @@
+//! UI component to create room with a given name
+
 use crate::derive_component;
 use crate::ui::input::Input;
 use crate::ui::prompt::Prompt;

@@ -1,9 +1,9 @@
 //! Current display in the chat panel
 
-mod actions;
 mod discussion;
 mod invite_member;
 mod invited_not_joined;
+mod prompts;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -19,14 +19,14 @@ use ratatui::style::{Color, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Wrap};
 
-use crate::app::chat::current_room::actions::create_room::CreateRoom;
-pub use crate::app::chat::current_room::actions::create_room::CreateRoomAction;
-use crate::app::chat::current_room::actions::search_room::RoomSearch;
 use crate::app::chat::current_room::discussion::Discussion;
 use crate::app::chat::current_room::invite_member::InviteMemberPopup;
 use crate::app::chat::current_room::invited_not_joined::{
     AcceptInvitation, InvitationToRoomPopup
 };
+use crate::app::chat::current_room::prompts::create_room::CreateRoom;
+pub use crate::app::chat::current_room::prompts::create_room::CreateRoomAction;
+use crate::app::chat::current_room::prompts::search_room::RoomSearch;
 use crate::ui::component::Component;
 use crate::ui::prompt::Status;
 use crate::ui::widgets::{

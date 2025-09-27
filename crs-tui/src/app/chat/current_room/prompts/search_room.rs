@@ -1,3 +1,5 @@
+//! UI component to search and open a room by typing its name
+
 extern crate alloc;
 use alloc::sync::Arc;
 use core::fmt::{self, Display, Formatter};
@@ -53,11 +55,16 @@ impl TryFrom<Arc<Mutex<DisplayRoom>>> for NamedRoom {
 
 /// Component to search a room by name
 pub struct RoomSearch {
+    /// Prompt UI component to search a room
     prompt: Prompt<NamedRoom>,
+    /// List of loaded rooms to find from
     rooms:  Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>,
 }
 
 impl RoomSearch {
+    /// Creates a new [`RoomSearch`] component.
+    ///
+    /// Only the rooms with a valid name can be chosen
     pub fn new(rooms: Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>) -> Self {
         let named_rooms = safe_unlock(&rooms)
             .iter()
