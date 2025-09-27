@@ -3,6 +3,7 @@
 #![allow(clippy::missing_docs_in_private_items, reason = "cf json reference")]
 
 use matrix_sdk::Room;
+use matrix_sdk::deserialized_responses::TimelineEvent;
 use matrix_sdk::room::MessagesOptions;
 use matrix_sdk::ruma::{UInt, UserId};
 use serde::{Deserialize, Serialize};
@@ -57,6 +58,16 @@ impl DisplayMessage {
     }
 }
 
+async fn parse_message(
+    room: &Room,
+    event: TimelineEvent,
+) -> matrix_sdk::Result<Option<DisplayMessage>> {
+    let json = event.into_raw();
+    let value = json.deserialize_as::<Value>()?;
+    let message: Message = serde_json::from_value(value)?;
+    DisplayMessage::try_from(message, room).await
+}
+
 /// Loads and parses the messages of a room
 ///
 /// # Errors
@@ -72,19 +83,14 @@ pub async fn get_room_messages(
     let mut opts = MessagesOptions::forward();
     opts.limit = UInt::MAX;
 
-    let room_messages = room.messages(opts).await?.chunk;
+    let events = room.messages(opts).await?.chunk;
 
-    let mut display_messages = Vec::with_capacity(room_messages.len());
-    for room_message in room_messages {
-        let json = room_message.into_raw();
-        let value = json.deserialize_as::<Value>().unwrap();
-        let message: Message = serde_json::from_value(value).unwrap();
-        if let Some(display_message) =
-            DisplayMessage::try_from(message, room).await?
-        {
-            display_messages.push(display_message);
+    let mut messages = Vec::with_capacity(events.len());
+    for event in events {
+        if let Some(message) = parse_message(room, event).await? {
+            messages.push(message);
         }
     }
 
-    Ok(display_messages)
+    Ok(messages)
 }
