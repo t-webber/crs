@@ -4,8 +4,11 @@ use core::fmt::{self, Display, Formatter};
 use std::sync::Mutex;
 
 use crs_backend::room::DisplayRoom;
+use ratatui::Frame;
+use ratatui::crossterm::event::Event;
+use ratatui::layout::Rect;
 
-use crate::derive_component;
+use crate::ui::component::Component;
 use crate::ui::input::Input;
 use crate::ui::prompt::Prompt;
 use crate::utils::safe_unlock;
@@ -27,7 +30,7 @@ impl NamedRoom {
 
     /// Return the underlying room object to do some actions on the matrix room
     #[must_use]
-    pub fn as_room(&self) -> Arc<Mutex<DisplayRoom>> {
+    fn as_room(&self) -> Arc<Mutex<DisplayRoom>> {
         Arc::clone(&self.room)
     }
 }
@@ -49,20 +52,49 @@ impl TryFrom<Arc<Mutex<DisplayRoom>>> for NamedRoom {
 }
 
 /// Component to search a room by name
-pub struct RoomSearch(Prompt<NamedRoom>);
+pub struct RoomSearch {
+    prompt: Prompt<NamedRoom>,
+    rooms:  Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>,
+}
 
 impl RoomSearch {
-    pub fn new(room_list: Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>) -> Self {
-        let named_room_list = safe_unlock(&room_list)
+    pub fn new(rooms: Arc<Mutex<Vec<Arc<Mutex<DisplayRoom>>>>>) -> Self {
+        let named_rooms = safe_unlock(&rooms)
             .iter()
             .filter_map(|room| Arc::clone(room).try_into().ok())
             .collect();
-        Self(Prompt::new_with_list(
-            Input::new().with_active(),
-            " Name fo the room ",
-            named_room_list,
-        ))
+        Self {
+            prompt: Prompt::new_with_list(
+                Input::new().with_active(),
+                " Name fo the room ",
+                named_rooms,
+            ),
+            rooms,
+        }
     }
 }
 
-derive_component!(RoomSearch, Prompt<NamedRoom>);
+impl Component for RoomSearch {
+    type ResponseData = <Prompt<NamedRoom> as Component>::ResponseData;
+    type UpdateState = Arc<Mutex<DisplayRoom>>;
+
+    fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
+        self.prompt.draw(frame, area);
+    }
+
+    async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
+        let name = self.prompt.on_event(event).await?;
+        safe_unlock(&self.rooms)
+            .iter()
+            .find(|room| {
+                safe_unlock(room)
+                    .as_name()
+                    .is_some_and(|room_name| room_name.as_ref() == name)
+            })
+            .cloned()
+    }
+
+    fn update(&mut self, response_data: Self::ResponseData) {
+        self.prompt.update(response_data);
+    }
+}

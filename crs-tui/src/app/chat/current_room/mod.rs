@@ -187,7 +187,7 @@ impl Component for CurrentRoom {
                         _ => unreachable!(),
                     }
                 } else if let Some(new_room) = search.on_event(event).await {
-                    self.select_new_room(new_room.as_room());
+                    self.select_new_room(new_room);
                 },
 
             CurrentRoomChild::None | CurrentRoomChild::Error(..) => (),

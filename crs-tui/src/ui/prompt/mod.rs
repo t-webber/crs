@@ -113,7 +113,7 @@ impl<T: Display> Prompt<T> {
 
 impl<T: Display> Component for Prompt<T> {
     type ResponseData = Status;
-    type UpdateState = T;
+    type UpdateState = String;
 
     #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
@@ -165,10 +165,10 @@ impl<T: Display> Component for Prompt<T> {
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         if let Some(key_event) = event.as_key_press_event() {
             if key_event.code.is_enter() {
-                todo!()
+                return Some(self.input.take_value());
             }
             if key_event.code.is_up() {}
-        };
+        }
         let _: Infallible = self.input.on_event(event).await?;
         None
     }
