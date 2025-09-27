@@ -64,19 +64,6 @@ impl DisplayRoom {
         &self.room_id
     }
 
-    /// Create a new room and invite a user to this room
-    ///
-    /// # Errors
-    ///
-    /// - When the room creation failed
-    /// - When the invination failed
-    pub async fn invite_user(
-        &self,
-        user_id: &str,
-    ) -> Result<(), matrix_sdk::Error> {
-        self.room.invite_user_by_id(&UserId::parse(user_id)?).await
-    }
-
     /// Create a new display room from a [`Room`]
     pub async fn new(room: Arc<Room>) -> Self {
         let name = get_room_name(&room).await;
@@ -131,6 +118,19 @@ impl RoomWrap {
     ) -> Result<DisplayRoom, matrix_sdk::Error> {
         self.0.join().await?;
         Ok(DisplayRoom::new(self.0).await)
+    }
+
+    /// Create a new room and invite a user to this room
+    ///
+    /// # Errors
+    ///
+    /// - When the room creation failed
+    /// - When the invination failed
+    pub async fn invite_user(
+        &self,
+        user_id: &str,
+    ) -> Result<(), matrix_sdk::Error> {
+        self.0.invite_user_by_id(&UserId::parse(user_id)?).await
     }
 
     /// Sends a message in a room

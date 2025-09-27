@@ -79,11 +79,12 @@ impl Component for InviteMemberPopup {
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         if let Some(key_event) = event.as_key_press_event()
             && key_event.code.is_enter()
-            && let Err(err) = safe_unlock(&self.room)
-                .invite_user(&self.person.take_value())
-                .await
         {
-            self.error = Some(err.to_string());
+            let room = safe_unlock(&self.room).as_room();
+            if let Err(err) = room.invite_user(&self.person.take_value()).await
+            {
+                self.error = Some(err.to_string());
+            }
         }
 
         self.person.on_event(event).await
