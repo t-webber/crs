@@ -1,7 +1,6 @@
 //! Component that displays an input at the middle of the page
 
 use core::convert::Infallible;
-mod entries;
 use core::fmt::Display;
 
 use ratatui::Frame;
@@ -22,13 +21,13 @@ pub struct PromptSubmit<T>(pub T);
 pub struct Prompt<T: Display> {
     /// Currently selected item, if used with entries
     cursor:  Option<usize>,
-    /// List of possible responses
-    entries: Option<Vec<T>>,
     /// Input to enter the name of the room to be create
     input:   Input<'static>,
     /// Message to display in the prompt, including error messages and loading
     /// statuses
     message: Status,
+    /// List of possible responses
+    results: Vec<T>,
     /// Title of the prompt
     title:   &'static str,
 }
@@ -72,19 +71,17 @@ impl<T: Display> Prompt<T> {
     }
 
     /// Returns the first possible entries that match the search
-    fn get_possibilites(&self, max_number: usize) -> Option<Vec<String>> {
+    fn get_possibilites(&self, max_number: usize) -> Vec<String> {
         let value = self.input.as_value();
-        let entries = self.entries.as_ref()?;
-        Some(
-            entries
-                .iter()
-                .filter_map(|entry| {
-                    let formatted = format!("{entry}");
-                    formatted.contains(value).then_some(formatted)
-                })
-                .take(max_number)
-                .collect(),
-        )
+
+        self.results
+            .iter()
+            .filter_map(|entry| {
+                let formatted = format!("{entry}");
+                formatted.contains(value).then_some(formatted)
+            })
+            .take(max_number)
+            .collect()
     }
 
     /// Create [`CreateRoom`] component
@@ -93,7 +90,7 @@ impl<T: Display> Prompt<T> {
             input,
             title,
             message: Status::None,
-            entries: None,
+            results: vec![],
             cursor: None,
         }
     }
@@ -108,7 +105,7 @@ impl<T: Display> Prompt<T> {
             input,
             title,
             message: Status::None,
-            entries: Some(entries),
+            results: entries,
             cursor: None,
         }
     }
@@ -134,9 +131,7 @@ impl<T: Display> Component for Prompt<T> {
         let max_possibilities_nb = area.height.saturating_sub(height);
         let possibilities = self.get_possibilites(max_possibilities_nb.into());
 
-        let possibilities_height = possibilities
-            .as_ref()
-            .map_or(0, |possib| saturating_cast(possib.len()));
+        let possibilities_height = saturating_cast(possibilities.len());
 
         height += possibilities_height;
 
@@ -164,9 +159,7 @@ impl<T: Display> Component for Prompt<T> {
             frame.render_widget(component, layout[1]);
         }
 
-        if let Some(possible_entries) = possibilities {
-            draw_possibilities(frame, layout[2], &possible_entries);
-        }
+        draw_possibilities(frame, layout[2], &possibilities);
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
