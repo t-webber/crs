@@ -13,6 +13,7 @@ impl CreateRoom {
         Self(Prompt::new(
             Input::new().with_active(),
             " Name of the room to create ",
+            vec![],
         ))
     }
 }

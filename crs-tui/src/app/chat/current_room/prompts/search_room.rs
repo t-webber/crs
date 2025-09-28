@@ -71,7 +71,7 @@ impl RoomSearch {
             .filter_map(|room| Arc::clone(room).try_into().ok())
             .collect();
         Self {
-            prompt: Prompt::new_with_list(
+            prompt: Prompt::new(
                 Input::new().with_active(),
                 " Name fo the room ",
                 named_rooms,
