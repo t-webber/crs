@@ -9,8 +9,8 @@ use ratatui::Frame;
 use ratatui::crossterm::event::Event;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
-use ratatui::text::{Line, Text};
-use ratatui::widgets::{Block, Paragraph};
+use ratatui::text::Text;
+use ratatui::widgets::Block;
 
 use crate::ui::component::Component;
 use crate::ui::input::Input;
@@ -22,13 +22,13 @@ pub struct PromptSubmit<T>(pub T);
 
 /// Popup to create a room
 pub struct Prompt<T: Display> {
+    /// List of possible responses
+    candidates: Candidates<T>,
     /// Input to enter the name of the room to be create
     input:      Input<'static>,
     /// Message to display in the prompt, including error messages and loading
     /// statuses
     message:    Status,
-    /// List of possible responses
-    candidates: Candidates<T>,
     /// Title of the prompt
     title:      &'static str,
 }
@@ -44,17 +44,7 @@ impl<T: Display> Prompt<T> {
     }
 
     /// Create [`CreateRoom`] component
-    pub const fn new(input: Input<'static>, title: &'static str) -> Self {
-        Self {
-            input,
-            title,
-            message: Status::None,
-            candidates: Candidates::new(),
-        }
-    }
-
-    /// Create [`CreateRoom`] component
-    pub const fn new_with_list(
+    pub const fn new(
         input: Input<'static>,
         title: &'static str,
         list: Vec<T>,
@@ -63,7 +53,7 @@ impl<T: Display> Prompt<T> {
             input,
             title,
             message: Status::None,
-            candidates: Candidates::new_with_list(list),
+            candidates: Candidates::new(list),
         }
     }
 }
@@ -85,15 +75,11 @@ impl<T: Display> Component for Prompt<T> {
 
         let mut height = input_height + 4 + message_height;
 
-        let max_possibilities_nb = area.height.saturating_sub(height);
-        let possibilities = self.candidates.get_possibilites(
-            max_possibilities_nb.into(),
-            self.input.as_value(),
-        );
+        let max_matching_displayed = area.height.saturating_sub(height);
+        let nb_matching = saturating_cast(self.candidates.nb_matching());
+        let candidates_height = nb_matching.min(max_matching_displayed);
 
-        let possibilities_height = saturating_cast(possibilities.len());
-
-        height += possibilities_height;
+        height += candidates_height;
 
         let popup_area = grid_center(
             Constraint::Length(width),
@@ -106,7 +92,7 @@ impl<T: Display> Component for Prompt<T> {
         let layout = Layout::new(Direction::Vertical, [
             Constraint::Length(input_height),
             Constraint::Length(message_height),
-            Constraint::Length(possibilities_height),
+            Constraint::Length(candidates_height),
         ])
         .margin(2)
         .split(popup_area);
@@ -119,7 +105,7 @@ impl<T: Display> Component for Prompt<T> {
             frame.render_widget(component, layout[1]);
         }
 
-        draw_possibilities(frame, layout[2], &possibilities);
+        self.candidates.draw(frame, layout[2]);
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
@@ -158,25 +144,4 @@ impl Status {
             Self::Submitting => Some(("Submitting...", Color::Green)),
         }
     }
-}
-
-/// Draws the list of matching entries
-fn draw_possibilities(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    possible_entries: &[String],
-) {
-    if possible_entries.is_empty() {
-        let empty = Text::from("No corresponding entry")
-            .style(Style::new().fg(Color::Red))
-            .centered();
-        frame.render_widget(empty, area);
-    }
-
-    let lines = possible_entries
-        .iter()
-        .map(|entry| Line::from(entry.as_str()))
-        .collect::<Vec<_>>();
-
-    frame.render_widget(Paragraph::new(lines), area);
 }

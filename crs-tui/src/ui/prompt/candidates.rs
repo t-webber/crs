@@ -1,14 +1,24 @@
 //! Displays the selection part of the prompt
 
+use core::convert::Infallible;
 use core::fmt::Display;
+
+use ratatui::layout::Rect;
+use ratatui::style::{Color, Style};
+use ratatui::text::{Line, Text};
+use ratatui::widgets::Paragraph;
+
+use crate::ui::component::Component;
 
 /// List of possible candidates to display
 pub struct Candidates<T: Display> {
     /// List of all the possible candidates, whether they correspond to the
     /// search or not
-    all_candidates: Vec<T>,
+    all:      Vec<T>,
     /// Currently selected item, if used with entries
-    cursor:         Option<usize>,
+    cursor:   Option<usize>,
+    /// Display of the candidates that match the search
+    matching: Vec<String>,
 }
 
 impl<T: Display> Candidates<T> {
@@ -16,11 +26,11 @@ impl<T: Display> Candidates<T> {
     /// position, if it is valid.
     #[expect(clippy::arithmetic_side_effects, reason = "explicitly checked")]
     const fn cursor_decrement(&mut self) {
-        if self.all_candidates.is_empty() {
+        if self.all.is_empty() {
             return;
         }
         self.cursor = Some(match self.cursor {
-            None | Some(0) => self.all_candidates.len() - 1,
+            None | Some(0) => self.all.len() - 1,
             Some(cursor) => cursor - 1,
         });
     }
@@ -28,45 +38,59 @@ impl<T: Display> Candidates<T> {
     /// Increment the cursor position after pressing tab with the new
     /// position, if it is valid.
     const fn cursor_increment(&mut self) {
-        if self.all_candidates.is_empty() {
+        if self.all.is_empty() {
             return;
         }
         self.cursor = Some(match self.cursor {
             None => 0,
             Some(cursor) => {
                 let incremented = cursor.saturating_add(1);
-                if incremented == self.all_candidates.len() {
-                    0
-                } else {
-                    incremented
-                }
+                if incremented == self.all.len() { 0 } else { incremented }
             }
         });
     }
 
+    /// Returns the number of candidates that match the search input
+    pub const fn nb_matching(&self) -> usize {
+        self.matching.len()
+    }
+
+    /// Returns a new empty [`Candidates`] with the given list of candidates
+    pub const fn new(list: Vec<T>) -> Self {
+        Self { cursor: None, all: list, matching: vec![] }
+    }
+
     /// Returns the first possible entries that match the search
-    pub fn get_possibilites(
-        &self,
-        max_number: usize,
-        input: &str,
-    ) -> Vec<String> {
-        self.all_candidates
+    fn update_matching(&mut self, input: &str) {
+        self.matching = self
+            .all
             .iter()
             .filter_map(|entry| {
                 let formatted = format!("{entry}");
                 formatted.contains(input).then_some(formatted)
             })
-            .take(max_number)
-            .collect()
+            .collect();
     }
+}
 
-    /// Returns a new empty [`Candidates`]
-    pub const fn new() -> Self {
-        Self { cursor: None, all_candidates: vec![] }
-    }
+impl<T: Display> Component for Candidates<T> {
+    type ResponseData = Infallible;
+    type UpdateState = Infallible;
 
-    /// Returns a new empty [`Candidates`]
-    pub const fn new_with_list(list: Vec<T>) -> Self {
-        Self { cursor: None, all_candidates: list }
+    fn draw(&self, frame: &mut ratatui::Frame<'_>, area: Rect) {
+        if self.matching.is_empty() {
+            let empty = Text::from("No corresponding entry")
+                .style(Style::new().fg(Color::Red))
+                .centered();
+            frame.render_widget(empty, area);
+        }
+
+        let lines = self
+            .matching
+            .iter()
+            .map(|entry| Line::from(entry.as_str()))
+            .collect::<Vec<_>>();
+
+        frame.render_widget(Paragraph::new(lines), area);
     }
 }
