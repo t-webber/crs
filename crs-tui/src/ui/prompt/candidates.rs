@@ -2,24 +2,25 @@
 
 use core::fmt::Display;
 
-/// List of possible results to display
-pub struct Results<T: Display> {
+/// List of possible candidates to display
+pub struct Candidates<T: Display> {
+    /// List of all the possible candidates, whether they correspond to the
+    /// search or not
+    all_candidates: Vec<T>,
     /// Currently selected item, if used with entries
-    cursor:  Option<usize>,
-    /// Results
-    results: Vec<T>,
+    cursor:         Option<usize>,
 }
 
-impl<T: Display> Results<T> {
+impl<T: Display> Candidates<T> {
     /// Decrement the cursor position after pressing tab with the new
     /// position, if it is valid.
     #[expect(clippy::arithmetic_side_effects, reason = "explicitly checked")]
     const fn cursor_decrement(&mut self) {
-        if self.results.is_empty() {
+        if self.all_candidates.is_empty() {
             return;
         }
         self.cursor = Some(match self.cursor {
-            None | Some(0) => self.results.len() - 1,
+            None | Some(0) => self.all_candidates.len() - 1,
             Some(cursor) => cursor - 1,
         });
     }
@@ -27,14 +28,18 @@ impl<T: Display> Results<T> {
     /// Increment the cursor position after pressing tab with the new
     /// position, if it is valid.
     const fn cursor_increment(&mut self) {
-        if self.results.is_empty() {
+        if self.all_candidates.is_empty() {
             return;
         }
         self.cursor = Some(match self.cursor {
             None => 0,
             Some(cursor) => {
                 let incremented = cursor.saturating_add(1);
-                if incremented == self.results.len() { 0 } else { incremented }
+                if incremented == self.all_candidates.len() {
+                    0
+                } else {
+                    incremented
+                }
             }
         });
     }
@@ -45,7 +50,7 @@ impl<T: Display> Results<T> {
         max_number: usize,
         input: &str,
     ) -> Vec<String> {
-        self.results
+        self.all_candidates
             .iter()
             .filter_map(|entry| {
                 let formatted = format!("{entry}");
@@ -55,13 +60,13 @@ impl<T: Display> Results<T> {
             .collect()
     }
 
-    /// Returns a new empty [`Results`]
+    /// Returns a new empty [`Candidates`]
     pub const fn new() -> Self {
-        Self { cursor: None, results: vec![] }
+        Self { cursor: None, all_candidates: vec![] }
     }
 
-    /// Returns a new empty [`Results`]
+    /// Returns a new empty [`Candidates`]
     pub const fn new_with_list(list: Vec<T>) -> Self {
-        Self { cursor: None, results: list }
+        Self { cursor: None, all_candidates: list }
     }
 }

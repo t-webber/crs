@@ -1,6 +1,6 @@
 //! Component that displays an input at the middle of the page
 
-mod results;
+mod candidates;
 
 use core::convert::Infallible;
 use core::fmt::Display;
@@ -14,7 +14,7 @@ use ratatui::widgets::{Block, Paragraph};
 
 use crate::ui::component::Component;
 use crate::ui::input::Input;
-use crate::ui::prompt::results::Results;
+use crate::ui::prompt::candidates::Candidates;
 use crate::ui::widgets::{grid_center, saturating_cast};
 
 /// Struct to send the data after submission
@@ -23,14 +23,14 @@ pub struct PromptSubmit<T>(pub T);
 /// Popup to create a room
 pub struct Prompt<T: Display> {
     /// Input to enter the name of the room to be create
-    input:   Input<'static>,
+    input:      Input<'static>,
     /// Message to display in the prompt, including error messages and loading
     /// statuses
-    message: Status,
+    message:    Status,
     /// List of possible responses
-    results: Results<T>,
+    candidates: Candidates<T>,
     /// Title of the prompt
-    title:   &'static str,
+    title:      &'static str,
 }
 
 impl<T: Display> Prompt<T> {
@@ -45,7 +45,12 @@ impl<T: Display> Prompt<T> {
 
     /// Create [`CreateRoom`] component
     pub const fn new(input: Input<'static>, title: &'static str) -> Self {
-        Self { input, title, message: Status::None, results: Results::new() }
+        Self {
+            input,
+            title,
+            message: Status::None,
+            candidates: Candidates::new(),
+        }
     }
 
     /// Create [`CreateRoom`] component
@@ -58,7 +63,7 @@ impl<T: Display> Prompt<T> {
             input,
             title,
             message: Status::None,
-            results: Results::new_with_list(list),
+            candidates: Candidates::new_with_list(list),
         }
     }
 }
@@ -81,7 +86,7 @@ impl<T: Display> Component for Prompt<T> {
         let mut height = input_height + 4 + message_height;
 
         let max_possibilities_nb = area.height.saturating_sub(height);
-        let possibilities = self.results.get_possibilites(
+        let possibilities = self.candidates.get_possibilites(
             max_possibilities_nb.into(),
             self.input.as_value(),
         );
