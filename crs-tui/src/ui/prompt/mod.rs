@@ -1,5 +1,7 @@
 //! Component that displays an input at the middle of the page
 
+mod results;
+
 use core::convert::Infallible;
 use core::fmt::Display;
 
@@ -12,6 +14,7 @@ use ratatui::widgets::{Block, Paragraph};
 
 use crate::ui::component::Component;
 use crate::ui::input::Input;
+use crate::ui::prompt::results::Results;
 use crate::ui::widgets::{grid_center, saturating_cast};
 
 /// Struct to send the data after submission
@@ -19,48 +22,18 @@ pub struct PromptSubmit<T>(pub T);
 
 /// Popup to create a room
 pub struct Prompt<T: Display> {
-    /// Currently selected item, if used with entries
-    cursor:  Option<usize>,
     /// Input to enter the name of the room to be create
     input:   Input<'static>,
     /// Message to display in the prompt, including error messages and loading
     /// statuses
     message: Status,
     /// List of possible responses
-    results: Vec<T>,
+    results: Results<T>,
     /// Title of the prompt
     title:   &'static str,
 }
 
 impl<T: Display> Prompt<T> {
-    /// Decrement the cursor position after pressing tab with the new
-    /// position, if it is valid.
-    #[expect(clippy::arithmetic_side_effects, reason = "explicitly checked")]
-    const fn cursor_decrement(&mut self) {
-        if self.results.is_empty() {
-            return;
-        }
-        self.cursor = Some(match self.cursor {
-            None | Some(0) => self.results.len() - 1,
-            Some(cursor) => cursor - 1,
-        });
-    }
-
-    /// Increment the cursor position after pressing tab with the new
-    /// position, if it is valid.
-    const fn cursor_increment(&mut self) {
-        if self.results.is_empty() {
-            return;
-        }
-        self.cursor = Some(match self.cursor {
-            None => 0,
-            Some(cursor) => {
-                let incremented = cursor.saturating_add(1);
-                if incremented == self.results.len() { 0 } else { incremented }
-            }
-        });
-    }
-
     /// Draws the border around the prompt
     fn draw_border(&self, frame: &mut Frame<'_>, popup_area: Rect) {
         let block = Block::bordered()
@@ -70,43 +43,22 @@ impl<T: Display> Prompt<T> {
         frame.render_widget(block, popup_area);
     }
 
-    /// Returns the first possible entries that match the search
-    fn get_possibilites(&self, max_number: usize) -> Vec<String> {
-        let value = self.input.as_value();
-
-        self.results
-            .iter()
-            .filter_map(|entry| {
-                let formatted = format!("{entry}");
-                formatted.contains(value).then_some(formatted)
-            })
-            .take(max_number)
-            .collect()
-    }
-
     /// Create [`CreateRoom`] component
     pub const fn new(input: Input<'static>, title: &'static str) -> Self {
-        Self {
-            input,
-            title,
-            message: Status::None,
-            results: vec![],
-            cursor: None,
-        }
+        Self { input, title, message: Status::None, results: Results::new() }
     }
 
     /// Create [`CreateRoom`] component
     pub const fn new_with_list(
         input: Input<'static>,
         title: &'static str,
-        entries: Vec<T>,
+        list: Vec<T>,
     ) -> Self {
         Self {
             input,
             title,
             message: Status::None,
-            results: entries,
-            cursor: None,
+            results: Results::new_with_list(list),
         }
     }
 }
@@ -129,7 +81,10 @@ impl<T: Display> Component for Prompt<T> {
         let mut height = input_height + 4 + message_height;
 
         let max_possibilities_nb = area.height.saturating_sub(height);
-        let possibilities = self.get_possibilites(max_possibilities_nb.into());
+        let possibilities = self.results.get_possibilites(
+            max_possibilities_nb.into(),
+            self.input.as_value(),
+        );
 
         let possibilities_height = saturating_cast(possibilities.len());
 
@@ -163,11 +118,10 @@ impl<T: Display> Component for Prompt<T> {
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
-        if let Some(key_event) = event.as_key_press_event() {
-            if key_event.code.is_enter() {
-                return Some(self.input.take_value());
-            }
-            if key_event.code.is_up() {}
+        if let Some(key_event) = event.as_key_press_event()
+            && key_event.code.is_enter()
+        {
+            return Some(self.input.take_value());
         }
         let _: Infallible = self.input.on_event(event).await?;
         None
