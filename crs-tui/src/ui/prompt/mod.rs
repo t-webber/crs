@@ -76,7 +76,7 @@ impl<T: Display> Component for Prompt<T> {
         let mut height = input_height + 4 + message_height;
 
         let max_matching_displayed = area.height.saturating_sub(height);
-        let nb_matching = saturating_cast(self.candidates.nb_matching());
+        let nb_matching = saturating_cast(self.candidates.nb_matching()).max(1);
         let candidates_height = nb_matching.min(max_matching_displayed);
 
         height += candidates_height;
@@ -109,12 +109,16 @@ impl<T: Display> Component for Prompt<T> {
     }
 
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
-        if let Some(key_event) = event.as_key_press_event()
-            && key_event.code.is_enter()
-        {
+        let code = event.as_key_press_event()?.code;
+        if code.is_enter() {
             return Some(self.input.take_value());
         }
-        let _: Infallible = self.input.on_event(event).await?;
+        if code.is_tab() || code.is_back_tab() {
+            let _: Infallible = self.candidates.on_event(event).await?;
+        } else {
+            self.input.on_event(event).await;
+            self.candidates.update_matching(self.input.as_value());
+        }
         None
     }
 

@@ -3,6 +3,7 @@
 use core::convert::Infallible;
 use core::fmt::Display;
 
+use ratatui::crossterm::event::Event;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Text};
@@ -61,7 +62,7 @@ impl<T: Display> Candidates<T> {
     }
 
     /// Returns the first possible entries that match the search
-    fn update_matching(&mut self, input: &str) {
+    pub fn update_matching(&mut self, input: &str) {
         self.matching = self
             .all
             .iter()
@@ -79,7 +80,7 @@ impl<T: Display> Component for Candidates<T> {
 
     fn draw(&self, frame: &mut ratatui::Frame<'_>, area: Rect) {
         if self.matching.is_empty() {
-            let empty = Text::from("No corresponding entry")
+            let empty = Text::from("No matching entry")
                 .style(Style::new().fg(Color::Red))
                 .centered();
             frame.render_widget(empty, area);
@@ -92,5 +93,16 @@ impl<T: Display> Component for Candidates<T> {
             .collect::<Vec<_>>();
 
         frame.render_widget(Paragraph::new(lines), area);
+    }
+
+    async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
+        if let Some(key_event) = event.as_key_press_event() {
+            if key_event.code.is_tab() {
+                self.cursor_increment();
+            } else if key_event.code.is_back_tab() {
+                self.cursor_decrement();
+            }
+        }
+        None
     }
 }
