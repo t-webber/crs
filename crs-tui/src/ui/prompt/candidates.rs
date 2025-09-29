@@ -27,11 +27,11 @@ impl<T: Display> Candidates<T> {
     /// position, if it is valid.
     #[expect(clippy::arithmetic_side_effects, reason = "explicitly checked")]
     const fn cursor_decrement(&mut self) {
-        if self.all.is_empty() {
+        if self.matching.is_empty() {
             return;
         }
         self.cursor = Some(match self.cursor {
-            None | Some(0) => self.all.len() - 1,
+            None | Some(0) => self.matching.len() - 1,
             Some(cursor) => cursor - 1,
         });
     }
@@ -39,14 +39,14 @@ impl<T: Display> Candidates<T> {
     /// Increment the cursor position after pressing tab with the new
     /// position, if it is valid.
     const fn cursor_increment(&mut self) {
-        if self.all.is_empty() {
+        if self.matching.is_empty() {
             return;
         }
         self.cursor = Some(match self.cursor {
             None => 0,
             Some(cursor) => {
                 let incremented = cursor.saturating_add(1);
-                if incremented == self.all.len() { 0 } else { incremented }
+                if incremented == self.matching.len() { 0 } else { incremented }
             }
         });
     }
@@ -89,7 +89,15 @@ impl<T: Display> Component for Candidates<T> {
         let lines = self
             .matching
             .iter()
-            .map(|entry| Line::from(entry.as_str()))
+            .enumerate()
+            .map(|(idx, entry)| {
+                if self.cursor.is_some_and(|cursor| cursor == idx) {
+                    Line::from(format!("*{entry}"))
+                        .style(Style::new().fg(Color::Green))
+                } else {
+                    Line::from(format!(" {entry}"))
+                }
+            })
             .collect::<Vec<_>>();
 
         frame.render_widget(Paragraph::new(lines), area);
