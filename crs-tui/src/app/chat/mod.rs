@@ -51,6 +51,7 @@ impl ChatPage {
     }
 
     /// Synchronise the existing rooms, including name and messages
+    #[expect(clippy::unwrap_used, reason = "inside of thread")] // TODO: handle it
     fn synchronise_rooms(&self) {
         let rooms = Arc::clone(&self.rooms);
         let user = Arc::clone(&self.user);

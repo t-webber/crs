@@ -74,6 +74,7 @@ impl Component for Discussion {
         self.message_prompt.draw(frame, layout[1]);
     }
 
+    #[expect(clippy::unwrap_used, reason = "not planned by trait")] // TODO: handle it
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         let key_event = event.as_key_press_event()?;
 

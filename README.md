@@ -36,7 +36,7 @@ make install
 make start
 ```
 
-> ![IMPORTANT]
+> [!IMPORTANT]
 >
 > Keep the terminal when you ran `make start` running for the rest of the homeserver setup.
 >
@@ -50,7 +50,7 @@ Use another terminal to run the mautrixes, for instance:
 make mautrix-whatsapp-run
 ```
 
-> ![TIP]
+> [!TIP]
 >
 > It is normal to get a few **HTTP 502** errors when connecting to the Synapse server. Simply wait and the BEB should solve this.
 
