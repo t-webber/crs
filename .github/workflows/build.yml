@@ -1,0 +1,27 @@
+name: Build
+
+on: [pull_request, push]
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            rust: [stable, nightly]
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install Rust
+              uses: actions-rs/toolchain@v1
+              with:
+                toolchain: ${{ matrix.rust }}
+                override: true
+
+            - name: Cargo build
+              run: cargo build --release
+
