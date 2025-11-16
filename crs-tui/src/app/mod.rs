@@ -17,7 +17,7 @@ use crate::app::chat::ChatPage;
 use crate::app::login::LoginPage;
 use crate::credentials::Credentials;
 use crate::ui::component::Component;
-use crate::ui::widgets::{fully_centered_content, saturating_cast};
+use crate::ui::widgets::{fully_centred_content, saturating_cast};
 
 /// App containing the user, the UI state
 ///
@@ -57,7 +57,7 @@ impl Component for App {
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
         if area.width <= 20 || area.height <= 10 {
             let text = "Terminal too small.";
-            let rect = fully_centered_content(
+            let rect = fully_centred_content(
                 saturating_cast(text.len()),
                 area.width,
                 area,

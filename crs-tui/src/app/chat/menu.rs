@@ -15,7 +15,7 @@ use ratatui::widgets::{Block, List, ListItem, Paragraph, Wrap};
 
 use crate::ui::component::Component;
 use crate::ui::widgets::{
-    Instructions, InstructionsBuilder, fully_centered_content, grid_center, saturating_cast
+    Instructions, InstructionsBuilder, fully_centred_content, grid_centre, saturating_cast
 };
 use crate::utils::{UNKNOWN_NAME, safe_unlock};
 
@@ -57,7 +57,7 @@ impl RoomList {
         let instructions = Self::instructions();
 
         let rect =
-            fully_centered_content(instructions.width, area.width - 4, area);
+            fully_centred_content(instructions.width, area.width - 4, area);
 
         let paragraph = Paragraph::new(instructions.line)
             .wrap(Wrap { trim: true })
@@ -70,7 +70,7 @@ impl RoomList {
     fn draw_loading(frame: &mut Frame<'_>, area: Rect) {
         let text = "Loading...";
 
-        let rect = grid_center(
+        let rect = grid_centre(
             Constraint::Length(saturating_cast(text.len())),
             Constraint::Length(1),
             area,

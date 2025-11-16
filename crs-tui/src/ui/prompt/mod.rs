@@ -15,7 +15,7 @@ use ratatui::widgets::Block;
 use crate::ui::component::Component;
 use crate::ui::input::Input;
 use crate::ui::prompt::candidates::Candidates;
-use crate::ui::widgets::{grid_center, saturating_cast};
+use crate::ui::widgets::{grid_centre, saturating_cast};
 
 /// Struct to send the data after submission
 pub struct PromptSubmit<T>(pub T);
@@ -81,7 +81,7 @@ impl<T: Display> Component for Prompt<T> {
 
         height += candidates_height;
 
-        let popup_area = grid_center(
+        let popup_area = grid_centre(
             Constraint::Length(width),
             Constraint::Length(height),
             area,

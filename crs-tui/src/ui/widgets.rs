@@ -72,22 +72,22 @@ pub fn saturating_cast(value: usize) -> u16 {
     u16::try_from(value).unwrap_or(u16::MAX)
 }
 
-/// Create a centered frame to display data in a centered rectangle inside the
+/// Create a centred frame to display data in a centred rectangle inside the
 /// current page.
-pub fn grid_center(
+pub fn grid_centre(
     horizontal_constraint: Constraint,
     vertical_constraint: Constraint,
     area: Rect,
 ) -> Rect {
-    let horizontal_center =
-        linear_center(horizontal_constraint, Direction::Horizontal, area);
+    let horizontal_centre =
+        linear_centre(horizontal_constraint, Direction::Horizontal, area);
 
-    linear_center(vertical_constraint, Direction::Vertical, horizontal_center)
+    linear_centre(vertical_constraint, Direction::Vertical, horizontal_centre)
 }
 
-/// Create a unidimensionally centered frame to display data in the middle in
-/// one [`Direction`]
-pub fn linear_center(
+/// Create a unidimensionally centred frame to display data in the middle
+/// in one [`Direction`]
+pub fn linear_centre(
     middle_constraint: Constraint,
     direction: Direction,
     area: Rect,
@@ -100,17 +100,17 @@ pub fn linear_center(
     .split(area)[1]
 }
 
-/// Center text both vertically and horizontally, adapting the constraints to
+/// Centre text both vertically and horizontally, adapting the constraints to
 /// the length of the text and the width of the area.
 #[expect(clippy::arithmetic_side_effects, reason = "round value")]
-pub fn fully_centered_content(
+pub fn fully_centred_content(
     content_width: u16,
     area_width: u16,
     area: Rect,
 ) -> Rect {
     let height = (content_width.saturating_div(area_width)).saturating_add(1);
 
-    grid_center(
+    grid_centre(
         Constraint::Length(area_width),
         Constraint::Length(height),
         area,

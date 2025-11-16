@@ -14,7 +14,7 @@ use ratatui::text::Text;
 
 use crate::ui::component::Component;
 use crate::ui::input::Input;
-use crate::ui::widgets::grid_center;
+use crate::ui::widgets::grid_centre;
 use crate::utils::safe_unlock;
 
 /// Popup widget to invite a member to the current room
@@ -54,7 +54,7 @@ impl Component for InviteMemberPopup {
         let height = Input::HEIGHT_WITH_LABEL + 2;
         let width = (area.width - 2).min(50);
 
-        let center = grid_center(
+        let centre = grid_centre(
             Constraint::Length(width),
             Constraint::Length(height),
             area,
@@ -64,7 +64,7 @@ impl Component for InviteMemberPopup {
             Constraint::Length(Input::HEIGHT_WITH_LABEL),
             Constraint::Length(2),
         ])
-        .split(center);
+        .split(centre);
 
         self.person.draw(frame, layout[0]);
 

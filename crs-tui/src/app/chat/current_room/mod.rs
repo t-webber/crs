@@ -30,7 +30,7 @@ use crate::app::chat::current_room::prompts::search_room::RoomSearch;
 use crate::ui::component::Component;
 use crate::ui::prompt::Status;
 use crate::ui::widgets::{
-    InstructionsBuilder, fully_centered_content, saturating_cast
+    InstructionsBuilder, fully_centred_content, saturating_cast
 };
 use crate::utils::{UNKNOWN_NAME, safe_unlock};
 
@@ -59,13 +59,13 @@ impl CurrentRoom {
         }
     }
 
-    /// Draws the error at the center of the chat panel
+    /// Draws the error at the centre of the chat panel
     #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw_error(err_msg: &str, frame: &mut Frame<'_>, area: Rect) {
         debug_assert!(area.width >= 20, "terminal too small");
 
         let err_len = saturating_cast(err_msg.len());
-        let rect = fully_centered_content(err_len, area.width - 4, area);
+        let rect = fully_centred_content(err_len, area.width - 4, area);
 
         let err_widget = Paragraph::new(err_msg)
             .style(Style::new().fg(Color::Red))
@@ -304,7 +304,7 @@ impl Component for NoRoomSelected {
             .text("to exit the TUI.")
             .build();
 
-        let rect = fully_centered_content(instructions.width, area.width, area);
+        let rect = fully_centred_content(instructions.width, area.width, area);
 
         let paragraph = Paragraph::new(instructions.line)
             .wrap(Wrap { trim: true })

@@ -13,7 +13,7 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 use crate::credentials::Credentials;
 use crate::ui::component::Component;
 use crate::ui::input::Input;
-use crate::ui::widgets::{Instructions, InstructionsBuilder, grid_center};
+use crate::ui::widgets::{Instructions, InstructionsBuilder, grid_centre};
 
 /// Height reserved for the error message
 const ERROR_HEIGHT: u16 = 4;
@@ -203,7 +203,7 @@ impl Component for LoginPage {
 
         let minimum_width = instructions.width.saturating_add(2);
 
-        let popup_area = grid_center(
+        let popup_area = grid_centre(
             Constraint::Min(minimum_width),
             Constraint::Length(POPUP_HEIGHT),
             area,

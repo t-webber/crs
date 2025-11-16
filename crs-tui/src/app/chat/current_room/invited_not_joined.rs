@@ -8,7 +8,7 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::widgets::{Block, Borders, Paragraph};
 
 use crate::ui::component::Component;
-use crate::ui::widgets::{InstructionsBuilder, linear_center};
+use crate::ui::widgets::{InstructionsBuilder, linear_centre};
 
 /// Represents the action of accepting an invitation
 pub struct AcceptInvitation;
@@ -21,14 +21,14 @@ impl Component for InvitationToRoomPopup {
     type UpdateState = AcceptInvitation;
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
-        let center =
-            linear_center(Constraint::Length(4), Direction::Vertical, area);
+        let centre =
+            linear_centre(Constraint::Length(4), Direction::Vertical, area);
 
         let layout = Layout::new(Direction::Vertical, [
             Constraint::Length(1),
             Constraint::Length(3),
         ])
-        .split(center);
+        .split(centre);
 
         let message =
             Paragraph::new("You have a pending invitation for this room.")
@@ -41,7 +41,7 @@ impl Component for InvitationToRoomPopup {
             .text("to accept and join.")
             .build();
 
-        let button_rect = linear_center(
+        let button_rect = linear_centre(
             Constraint::Length(accept.width.saturating_add(2)),
             Direction::Horizontal,
             layout[1],
