@@ -134,7 +134,7 @@ pub enum Status {
     Error(String),
     /// Nothing to display
     None,
-    /// Submition in progress
+    /// Submission in progress
     Submitting,
 }
 

@@ -9,7 +9,7 @@ use ratatui::layout::Rect;
 
 /// Trait to define components present in the app
 ///
-/// An infinite loop is executed to re-redner the app. The UI is rendered, then
+/// An infinite loop is executed to re-render the app. The UI is rendered, then
 /// blocked until an [`Event`] occurs. After when this event occurs, the
 /// component is updated then the screen is redrawn.
 ///

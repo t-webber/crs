@@ -19,7 +19,7 @@ use crate::utils::safe_unlock;
 
 /// Popup widget to invite a member to the current room
 pub struct InviteMemberPopup {
-    /// Invitiation error, if exists
+    /// Invitation error, if exists
     error:  Option<String>,
     /// Name of the person to add to the current room
     person: Input<'static>,

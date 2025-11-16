@@ -76,13 +76,13 @@ pub fn saturating_cast(value: usize) -> u16 {
 /// current page.
 pub fn grid_center(
     horizontal_constraint: Constraint,
-    vertical_constrait: Constraint,
+    vertical_constraint: Constraint,
     area: Rect,
 ) -> Rect {
     let horizontal_center =
         linear_center(horizontal_constraint, Direction::Horizontal, area);
 
-    linear_center(vertical_constrait, Direction::Vertical, horizontal_center)
+    linear_center(vertical_constraint, Direction::Vertical, horizontal_center)
 }
 
 /// Create a unidimensionally centered frame to display data in the middle in

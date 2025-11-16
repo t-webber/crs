@@ -129,7 +129,7 @@ impl LoginPage {
 
     /// Create a new login page with the given credentials
     ///
-    /// They are use as defailt. They will be lost after a login attempt.
+    /// They are use as default. They will be lost after a login attempt.
     pub fn new(credentials: Credentials<String>) -> Self {
         let mut this = Self::default();
         this.homeserver.set_value(credentials.homeserver);

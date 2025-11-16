@@ -82,10 +82,10 @@ impl User {
     ///
     /// # Errors
     ///
-    /// Returns an error when one of the tokio tasks paniced.
+    /// Returns an error when one of the tokio tasks panicked.
     ///
     /// This doesn't return an error if the room failed to load, the room will
-    /// cotnain results. Refer to [`DisplayRoom`] for more information.
+    /// contain results. Refer to [`DisplayRoom`] for more information.
     pub async fn load_rooms<OnRoomLoad>(
         &self,
         on_room_load: OnRoomLoad,
@@ -148,7 +148,7 @@ impl User {
         Ok(Self { username: None, client })
     }
 
-    /// Calls a handler when an incomming message is received
+    /// Calls a handler when an incoming message is received
     #[must_use]
     pub fn on_receive_message<F>(&self, handler: F) -> EventHandlerHandle
     where F: Fn(SyncRoomMessageEvent) + Clone + Sync + Send + 'static {
@@ -162,7 +162,7 @@ impl User {
     /// A room is visible if the user joined, was invited or left the room.
     ///
     /// This function will never panic or return an error, it will just run
-    /// indefinetly until a room is visible from the [`User`].
+    /// indefinitely until a room is visible from the [`User`].
     pub fn wait_for_visible_room(&self) {
         let mut backoff = 1;
         loop {

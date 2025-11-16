@@ -1,6 +1,6 @@
 //! Backend for the CRS app.
 //!
-//! Handles connections to the server and updates the client data on incomming
+//! Handles connections to the server and updates the client data on incoming
 //! messages.
 
 #![warn(

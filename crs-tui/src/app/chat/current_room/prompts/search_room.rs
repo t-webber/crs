@@ -73,7 +73,7 @@ impl RoomSearch {
         Self {
             prompt: Prompt::new(
                 Input::new().with_active(),
-                " Name fo the room ",
+                " Name of the room ",
                 named_rooms,
             ),
             rooms,

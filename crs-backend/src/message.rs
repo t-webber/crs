@@ -6,15 +6,15 @@ use matrix_sdk::Room;
 use matrix_sdk::deserialized_responses::TimelineEvent;
 use matrix_sdk::room::MessagesOptions;
 use matrix_sdk::ruma::{UInt, UserId};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize as Serialise}; // ignore-spell
 use serde_json::Value;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialise, Deserialize)]
 struct Content {
     body: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialise, Deserialize)]
 struct Message {
     content: Content,
     sender:  String,
