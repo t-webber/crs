@@ -25,7 +25,7 @@ pub struct Discussion {
 }
 
 impl Discussion {
-    /// Returns the underlying [`RoomDisplay`]
+    /// Returns the underlying [`DisplayRoom`]
     pub fn into_room(self) -> Arc<Mutex<DisplayRoom>> {
         self.room
     }

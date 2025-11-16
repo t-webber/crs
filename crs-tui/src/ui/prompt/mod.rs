@@ -43,7 +43,7 @@ impl<T: Display> Prompt<T> {
         frame.render_widget(block, popup_area);
     }
 
-    /// Create [`CreateRoom`] component
+    /// Create [`Prompt`] component
     pub const fn new(
         input: Input<'static>,
         title: &'static str,

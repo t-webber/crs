@@ -17,7 +17,7 @@ pub struct Instructions<'text> {
 ///
 /// # Examples
 ///
-/// To display "Press <Enter> to open., use this:
+/// To display `Press \<Enter\> to open.` nicely, use this:
 ///
 /// ```rust
 /// use crate::ui::widget::*;

@@ -35,8 +35,7 @@ impl Tui {
     ///
     /// # Errors
     ///
-    /// Returns an error when
-    /// [`ClientBuild::build`](backend::matrix_sdk::ClientBuilder::build) does.
+    /// Returns an error when the login was not successful.
     pub async fn new(
         credentials: Credentials<Option<String>>,
     ) -> color_eyre::Result<Self> {
