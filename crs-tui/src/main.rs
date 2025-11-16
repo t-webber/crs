@@ -1,6 +1,6 @@
 //! TUI application to display and interactive with the CRS backend
 
-#![warn(
+#![deny(
     missing_docs,
     warnings,
     deprecated_safe,

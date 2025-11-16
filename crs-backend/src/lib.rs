@@ -3,7 +3,7 @@
 //! Handles connections to the server and updates the client data on incoming
 //! messages.
 
-#![warn(
+#![deny(
     missing_docs,
     warnings,
     deprecated_safe,
