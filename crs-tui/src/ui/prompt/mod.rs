@@ -62,24 +62,24 @@ impl<T: Display> Component for Prompt<T> {
     type ResponseData = Status;
     type UpdateState = String;
 
-    #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
-        let width = (area.width - 2).min(50);
+        let width = area.width.saturating_sub(2).min(50);
 
         let message = self.message.as_content();
         let message_height = message.map_or(0, |msg| {
-            saturating_cast(msg.0.len()).saturating_div(width).saturating_add(1)
+            saturating_cast(msg.0.len()).div_euclid(width).saturating_add(1)
         });
 
         let input_height = self.input.height();
 
-        let mut height = input_height + 4 + message_height;
+        let mut height =
+            input_height.saturating_add(4).saturating_add(message_height);
 
         let max_matching_displayed = area.height.saturating_sub(height);
         let nb_matching = saturating_cast(self.candidates.nb_matching()).max(1);
         let candidates_height = nb_matching.min(max_matching_displayed);
 
-        height += candidates_height;
+        height = height.saturating_add(candidates_height);
 
         let popup_area = grid_centre(
             Constraint::Length(width),

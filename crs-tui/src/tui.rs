@@ -19,8 +19,17 @@ pub struct Tui {
     terminal: Terminal<CrosstermBackend<Stdout>>,
 }
 
-#[expect(clippy::arbitrary_source_item_ordering, reason = "run order")]
 impl Tui {
+    /// Deletes the app and cleans up
+    ///
+    /// This must be run even if the app crashes to restore the terminal to
+    /// normal usage. If forgotten, the user can restore the terminal with the
+    /// `stty sane` (on Linux).
+    #[expect(clippy::unused_self, reason = "the goal is to destroy the object")]
+    pub fn delete(self) {
+        ratatui::restore();
+    }
+
     /// Draws the UI in the terminal
     fn draw(&mut self) -> Result<(), io::Error> {
         self.terminal.draw(|frame| self.app.draw(frame, frame.area()))?;
@@ -88,15 +97,5 @@ impl Tui {
                 }
             }
         }
-    }
-
-    /// Deletes the app and cleans up
-    ///
-    /// This must be run even if the app crashes to restore the terminal to
-    /// normal usage. If forgotten, the user can restore the terminal with the
-    /// `stty sane` (on Linux).
-    #[expect(clippy::unused_self, reason = "the goal is to destroy the object")]
-    pub fn delete(self) {
-        ratatui::restore();
     }
 }

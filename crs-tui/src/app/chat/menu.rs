@@ -54,6 +54,11 @@ impl RoomList {
     /// Draws the room list for when no rooms are available.
     #[expect(clippy::arithmetic_side_effects, reason = "width >= 20")]
     fn draw_empty(frame: &mut Frame<'_>, area: Rect) {
+        debug_assert!(
+            area.as_size().width >= 20,
+            "menu shouldn't be displayed on small screens"
+        );
+
         let instructions = Self::instructions();
 
         let rect =
@@ -174,11 +179,6 @@ impl Component for RoomList {
     type UpdateState = usize;
 
     fn draw(&self, frame: &mut Frame<'_>, area: Rect) {
-        debug_assert!(
-            area.as_size().width >= 20,
-            "menu shouldn't be displayed on small screens"
-        );
-
         if safe_unlock(&self.rooms).is_empty() {
             if self.is_loading {
                 Self::draw_loading(frame, area);

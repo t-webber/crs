@@ -155,7 +155,6 @@ impl LoginPage {
     }
 
     /// Fill the form with the current values
-    #[expect(clippy::indexing_slicing, reason = "len = 3")]
     fn render_form(&self, frame: &mut Frame<'_>, area: Rect) {
         let input_height = Input::HEIGHT_WITH_LABEL;
 

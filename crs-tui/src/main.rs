@@ -66,10 +66,7 @@ use crate::credentials::Credentials;
 use crate::tui::Tui;
 
 #[tokio::main]
-#[expect(
-    clippy::unwrap_in_result,
-    reason = "wait to process error to restore the terminal"
-)]
+#[expect(clippy::unwrap_in_result, reason = "needed by tokio")]
 async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
