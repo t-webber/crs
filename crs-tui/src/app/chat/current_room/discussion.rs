@@ -4,12 +4,15 @@ extern crate alloc;
 
 use alloc::sync::Arc;
 use core::convert::Infallible;
+use core::mem::take;
 use std::sync::Mutex;
 
 use crs_backend::room::DisplayRoom;
 use ratatui::Frame;
 use ratatui::crossterm::event::Event;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::style::{Color, Style};
+use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{List, ListItem};
 
 use crate::ui::component::Component;
@@ -61,11 +64,16 @@ impl Component for Discussion {
         let messages = room.as_messages().unwrap();
 
         let list = messages.iter().map(|message| {
-            ListItem::new(format!(
-                "{}: {}",
-                message.as_sender(),
-                message.as_body()
-            ))
+            let mut body = tui_markdown::from_str(message.as_body()).lines;
+            let first_body_line = take(&mut body[0]);
+
+            let sender = Span::from(format!("{}: ", message.as_sender()))
+                .patch_style(Style::default().fg(Color::Red));
+
+            body[0] = Line::from(sender);
+            body[0].extend(first_body_line);
+
+            ListItem::from(Text::from(body))
         });
 
         frame.render_widget(List::new(list), layout[0]);
