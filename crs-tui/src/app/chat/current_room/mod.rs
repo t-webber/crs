@@ -49,9 +49,10 @@ impl CurrentRoom {
     async fn accept_invitation(&mut self, room: Arc<Mutex<DisplayRoom>>) {
         let room_handle = safe_unlock(&room).as_room();
         match room_handle.accept_invitation().await {
-            Err(err) =>
+            Err(err) => {
                 self.child =
-                    CurrentRoomChild::Error(err.to_string(), Some(room)),
+                    CurrentRoomChild::Error(err.to_string(), Some(room));
+            }
             Ok(new_room) => {
                 *safe_unlock(&room) = new_room;
                 self.select_new_room(room);
@@ -118,11 +119,13 @@ impl Component for CurrentRoom {
         self.draw_room_name(frame, layout[0]);
 
         match &self.child {
-            CurrentRoomChild::CreateRoom(child, _) =>
-                child.draw(frame, layout[1]),
+            CurrentRoomChild::CreateRoom(child, _) => {
+                child.draw(frame, layout[1]);
+            }
             CurrentRoomChild::Discussion(child) => child.draw(frame, layout[1]),
-            CurrentRoomChild::Error(err_msg, _) =>
-                Self::draw_error(err_msg, frame, layout[1]),
+            CurrentRoomChild::Error(err_msg, _) => {
+                Self::draw_error(err_msg, frame, layout[1]);
+            }
             CurrentRoomChild::Invite(invite) => invite.draw(frame, layout[1]),
             CurrentRoomChild::Invited(child, _) => child.draw(frame, layout[1]),
             CurrentRoomChild::None => NoRoomSelected.draw(frame, layout[1]),
@@ -172,23 +175,26 @@ impl Component for CurrentRoom {
                 let _: AcceptInvitation =
                     invitation_popup.on_event(event).await?;
                 match take(&mut self.child) {
-                    CurrentRoomChild::Invited(_, room) =>
-                        self.accept_invitation(room).await,
+                    CurrentRoomChild::Invited(_, room) => {
+                        self.accept_invitation(room).await;
+                    }
                     _ => unreachable!(),
                 }
             }
 
-            CurrentRoomChild::Search(search, _) =>
+            CurrentRoomChild::Search(search, _) => {
                 if event.as_key_press_event()?.code.is_caps_lock() {
                     match take(&mut self.child) {
-                        CurrentRoomChild::Search(_, Some(room)) =>
-                            self.select_new_room(room),
+                        CurrentRoomChild::Search(_, Some(room)) => {
+                            self.select_new_room(room);
+                        }
                         CurrentRoomChild::Search(_, None) => (),
                         _ => unreachable!(),
                     }
                 } else if let Some(new_room) = search.on_event(event).await {
                     self.select_new_room(new_room);
-                },
+                }
+            }
 
             CurrentRoomChild::None | CurrentRoomChild::Error(..) => (),
         }
@@ -202,8 +208,9 @@ impl Component for CurrentRoom {
                 self.child = CurrentRoomChild::Error(error, old_room);
             }
 
-            UpdateCurrentRoomPanel::NewRoom(new_room) =>
-                self.select_new_room(new_room),
+            UpdateCurrentRoomPanel::NewRoom(new_room) => {
+                self.select_new_room(new_room);
+            }
 
             UpdateCurrentRoomPanel::Search(room_list) => {
                 let old_room = self.child.take_room();

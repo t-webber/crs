@@ -193,8 +193,9 @@ impl Component for RoomList {
     async fn on_event(&mut self, event: Event) -> Option<Self::UpdateState> {
         let key_event = event.as_key_press_event()?;
         match key_event.code {
-            KeyCode::Up =>
-                self.selected_room = self.selected_room.saturating_sub(1),
+            KeyCode::Up => {
+                self.selected_room = self.selected_room.saturating_sub(1);
+            }
             KeyCode::Down => {
                 let len = safe_unlock(&self.rooms).len();
                 let new_index = self.selected_room.saturating_add(1);
