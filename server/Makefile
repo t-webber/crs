@@ -23,19 +23,12 @@ endef
 export SETTINGS
 
 .DEFAULT_GOAL := start
-.PHONY: requirements install clean start createuser whatsapp install-synapse
+.PHONY: install clean start createuser whatsapp install-synapse
 .SECONDARY:
 
-requirements:
-	pip install --upgrade pip
-	pip install --upgrade setuptools
-	pip install matrix-synapse
-	pip list --format=freeze >requirements.txt
-
 install-synapse:
-	pip install -r requirements.txt
-	pip list --format=freeze >requirements.txt
-	$(SYNAPSE) --server-name $(SERVER) --config-path $(CONFIG) --generate-config --report-stats=no
+	@uv sync
+	@$(SYNAPSE) --server-name $(SERVER) --config-path $(CONFIG) --generate-config --report-stats=no
 	@echo "$$SETTINGS" >> $(CONFIG)
 
 install: mautrix-whatsapp-registration.yaml install-synapse
@@ -65,7 +58,7 @@ mautrix-%-config.yaml: mautrix-%-config.yaml.default
 	sed 's/type: postgres/type: sqlite3-fk-wal/;s/uri: postgres:\/\/user:password@host\/database?sslmode=disable/uri: mautrix-whatsapp.sqlite3/;s/address: http:\/\/example./address: http:\/\//;s/example.com/$(SERVER)/' $< > $@
 
 mautrix-%-registration.yaml: mautrix-%-config.yaml
-	[ -f $@ ] || ./mautrix-$*-$(ARCH) -g -c $< -r $@
+	@[ -f $@ ] || ./mautrix-$*-$(ARCH) -g -c $< -r $@
 
 mautrix-%-run: mautrix-%-config.yaml mautrix-%-registration.yaml
 	./mautrix-$*-$(ARCH) -c $< -r $(word 2,$^)

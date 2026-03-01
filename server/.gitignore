@@ -1,6 +1,8 @@
 *
 
 !Makefile
-!requirements.txt
+!pyproject.toml
+!.python-version
 !.gitignore
 !README.md
+!uv.lock
