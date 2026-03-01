@@ -37,6 +37,7 @@
 #![allow(
     clippy::mod_module_files,
     clippy::separated_literal_suffix,
+    clippy::doc_paragraphs_missing_punctuation,
     reason = "chosen style"
 )]
 #![allow(
@@ -66,7 +67,6 @@ use crate::credentials::Credentials;
 use crate::tui::Tui;
 
 #[tokio::main]
-#[expect(clippy::unwrap_in_result, reason = "needed by tokio")]
 async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 

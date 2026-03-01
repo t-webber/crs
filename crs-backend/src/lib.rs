@@ -3,6 +3,7 @@
 //! Handles connections to the server and updates the client data on incoming
 //! messages.
 
+#![recursion_limit = "256"]
 #![deny(
     missing_docs,
     warnings,
@@ -29,7 +30,11 @@
 )]
 #![expect(clippy::blanket_clippy_restriction_lints, reason = "import them all")]
 #![allow(clippy::multiple_crate_versions, reason = "needed by deps")]
-#![allow(clippy::separated_literal_suffix, reason = "chosen style")]
+#![allow(
+    clippy::separated_literal_suffix,
+    clippy::doc_paragraphs_missing_punctuation,
+    reason = "chosen style"
+)]
 #![allow(
     clippy::implicit_return,
     clippy::question_mark_used,
