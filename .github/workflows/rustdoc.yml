@@ -1,6 +1,12 @@
 name: Rustdoc
 
-on: [pull_request, push]
+on:
+  push:
+    paths:
+      - '**/*.rs'
+  pull_request:
+    paths:
+      - '**/*.rs'
 
 env:
     CARGO_TERM_COLOR: always

@@ -1,6 +1,12 @@
 name: Taplo
 
-on: [pull_request, push]
+on:
+  push:
+    paths:
+      - '**/*.toml'
+  pull_request:
+    paths:
+      - '**/*.toml'
 
 jobs:
     taplo:

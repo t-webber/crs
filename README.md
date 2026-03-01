@@ -1,5 +1,17 @@
 # CRS - a TUI multiplatform chat service
 
+![Clippy](https://github.com/t-webber/vim-buffer/actions/workflows/clippy.yml/badge.svg?branch=main)
+![Build](https://github.com/t-webber/vim-buffer/actions/workflows/build.yml/badge.svg?branch=main)
+![Rustdoc](https://github.com/t-webber/vim-buffer/actions/workflows/rustdoc.yml/badge.svg?branch=main)
+![Rusfmt](https://github.com/t-webber/vim-buffer/actions/workflows/rustfmt.yml/badge.svg?branch=main)
+![Taplo](https://github.com/t-webber/vim-buffer/actions/workflows/taplo.yml/badge.svg?branch=main)
+![Spelling](https://github.com/t-webber/vim-buffer/actions/workflows/spelling.yml/badge.svg?branch=main)
+
+[![github](https://img.shields.io/badge/GitHub-t--webber/crs-blue?logo=GitHub)](https://github.com/t-webber/vim-buffer)
+[![license](https://img.shields.io/badge/Licence-MIT%20or%20Apache%202.0-darkgreen)](https://github.com/t-webber/vim-buffer?tab=MIT-2-ov-file)
+[![coverage](https://img.shields.io/badge/Coverage-100%25-purple)](https://github.com/t-webber/vim-buffer/actions/workflows/nightly.yml)
+[![rust-edition](https://img.shields.io/badge/Rust--edition-2024-darkred?logo=Rust)](https://doc.rust-lang.org/stable/edition-guide/rust-2024/)
+
 ## Useful links
 
 - [matrix server with integrated bridge manager](https://github.com/beeper/bridge-manager)
